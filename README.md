@@ -1,33 +1,36 @@
-# Unity Enhanced Gesture
+# Unity Generic Palette
 
-`Unity Enhanced Gesture` は、Unity Input System の `EnhancedTouch` をベースにしたモバイル向けジェスチャーライブラリです。  
-uGUI の `RectTransform` と 3D の `Collider` を対象に、ドラッグ、タップ、ピンチをイベント駆動で扱えます。
+`Unity Generic Palette` は、`Color` や `TextStyle` のような共通設定を `Palette` と `Profile` で管理し、UI やコンポーネントへ再利用可能な形で適用するためのライブラリです。
 
-このリポジトリは、Unity プロジェクト本体と UPM パッケージを同梱しています。実際のパッケージ本体は `Packages/com.daitokuamy.unityenhancedgesture` にあります。
+`Theme` 切り替えだけでなく、言語差し替え、イベント状態差し替え、Addressables を使った遅延ロードにも対応できる構成を目指しています。
 
 ## Features
 
-- `Drag` / `Tap` / `Pinch` を同じ運用で扱える
-- `RectTransform` 向け `UI` ハンドラーと `Collider` 向け `3D` ハンドラーを用意
-- `System.Action<TEvent>` ベースで購読でき、`UnityEvent` に依存しない
-- `GestureCoordinator` が入力収集とハンドラー振り分けを一元管理
-- ハンドラーの `Priority` による競合解決に対応
-- `Tap` は `SingleTap` / `DoubleTap` / `LongTap` をサポート
-- `Drag` は通常ドラッグに加えて `LongTapDrag` 開始にも対応
-- `Pinch` は距離だけでなく中心座標と角度差分も取得可能
-- Unity Editor 上ではマウス入力で基本動作を確認できる
-- Unity Editor 上では `Alt + Drag` でピンチ操作をシミュレートできる
+- `PaletteAsset` に `EntryId` 集合を定義し、値の参照先を安定化できる
+- `PaletteProfileAsset` で `Profile` ごとの実値を分離できる
+- `PaletteEngine` が `Profile` 切り替えと再反映通知を一元管理する
+- `Included ProfileAsset` と外部 `Loader` の両方を同じ API で扱える
+- `ProfileId -> GUID` の対応表を Editor が自動同期する
+- Addressables 利用時は `GuidBaseAddressablesLoader` を使って GUID ベースでロードできる
+- 組み込みの `Color` / `TMP TextStyle` / `Legacy TextStyle` / `Gradient` パレット型を用意している
+- 組み込み `Applier` は `Graphic.color`、`TMP_Text`、`UnityEngine.UI.Text` に対応している
 
-## Requirements
+## Package
 
-- Unity `6000.0` 以降
-- Unity Input System
-- uGUI
+- Package name: `com.daitokuamy.unitygenericpalette`
+- Current version: `0.9.0`
+- Unity: `6000.0` 以降
 
-パッケージの `package.json` では以下に依存しています。
+## Built-in Palette Types
 
-- `com.unity.inputsystem` `1.14.2`
-- `com.unity.ugui` `2.0.0`
+| Palette Type | Value Type | Built-in Applier |
+| --- | --- | --- |
+| `ColorPaletteAsset` | `UnityEngine.Color` | `GraphicColorPaletteApplier` |
+| `TextStylePaletteAsset` | `TextStylePaletteValue` | `TmpTextStylePaletteApplier` |
+| `LegacyTextStylePaletteAsset` | `LegacyTextStylePaletteValue` | `LegacyTextStylePaletteApplier` |
+| `GradientPaletteAsset` | `UnityEngine.Gradient` | なし |
+
+`Gradient` はパレット化できるが、現時点では組み込み `Applier` は提供していません。
 
 ## Installation
 
@@ -36,271 +39,228 @@ uGUI の `RectTransform` と 3D の `Collider` を対象に、ドラッグ、タ
 Unity の `Window > Package Manager` を開き、`Add package from git URL...` から次を指定します。
 
 ```text
-https://github.com/DaitokuAmy/unity-enhanced-gesture.git?path=/Packages/com.daitokuamy.unityenhancedgesture
+https://github.com/DaitokuAmy/unity-generic-palette.git?path=/Packages/com.daitokuamy.unitygenericpalette
 ```
 
-タグを固定したい場合は末尾にバージョンを付けてください。
+タグを固定したい場合は末尾にバージョンを付けます。
 
 ```text
-https://github.com/DaitokuAmy/unity-enhanced-gesture.git?path=/Packages/com.daitokuamy.unityenhancedgesture#0.9.0
+https://github.com/DaitokuAmy/unity-generic-palette.git?path=/Packages/com.daitokuamy.unitygenericpalette#0.9.0
 ```
 
 ### Install via manifest.json
 
-`Packages/manifest.json` の `dependencies` に追加する場合は次のように設定します。
-
 ```json
 {
   "dependencies": {
-    "com.daitokuamy.unityenhancedgesture": "https://github.com/DaitokuAmy/unity-enhanced-gesture.git?path=/Packages/com.daitokuamy.unityenhancedgesture"
+    "com.daitokuamy.unitygenericpalette": "https://github.com/DaitokuAmy/unity-generic-palette.git?path=/Packages/com.daitokuamy.unitygenericpalette"
   }
 }
 ```
 
 ## Quick Start
 
-### 1. `GestureCoordinator` をシーンに配置
+### 1. Create `PaletteAssetStorage`
 
-最初にシーンへ `GestureCoordinator` を 1 つ配置します。
+Project Settings の `Project/Unity Generic Palette` から `Palette Asset Storage` を作成または設定します。
 
-- `Input Management Mode`
-  - `Automatic`: `EnhancedTouchSupport` の有効化を `GestureCoordinator` が管理
-  - `External`: 既存システム側で `EnhancedTouchSupport.Enable()` を管理
-- `Update Mode`
-  - `Update`: `MonoBehaviour.Update()` で自動更新
-  - `ManualUpdate`: 任意のタイミングで `ManualUpdate()` を呼ぶ
-- `Event Camera`
-  - `3D` ハンドラーでスクリーン座標からレイを飛ばすときに使用
+作成されるルートアセット:
 
-`GestureCoordinator` は複数配置に対応していません。
+- `PaletteAssetStorage`
 
-### 2. 対象オブジェクトにハンドラーを追加
+このアセットは利用する `PaletteAsset` 一覧を保持します。
 
-用途に応じて対象へハンドラーを追加します。
+### 2. Create palettes and profiles in `PaletteEditorWindow`
 
-#### UI 向け
+`PaletteEditorWindow` から次を行います。
 
-- `DragGestureHandlerUI`
-- `TapGestureHandlerUI`
-- `PinchGestureHandlerUI`
+- `PaletteAsset` の追加
+- `Entry` の追加
+- `PaletteProfileAsset` の追加
+- `Profile Value` の編集
+- `Default` の設定
 
-それぞれ対象の `RectTransform` を設定します。
+重要な Editor 仕様:
 
-#### 3D 向け
+- Profile リストを選択しただけでは preview は切り替わりません
+- Profile Popup を選択しただけでも preview は切り替わりません
+- `Default` を設定したときだけ preview 用 current profile が更新されます
 
-- `DragGestureHandler3D`
-- `TapGestureHandler3D`
-- `PinchGestureHandler3D`
+### 3. Place `PaletteEngine` in the scene
 
-それぞれ対象の `Collider` を設定します。`3D` ハンドラーを使う場合は、`GestureCoordinator` の `Event Camera` も設定してください。
+シーンに `PaletteEngine` を 1 つ配置し、次を設定します。
 
-### 3. スクリプトからイベントを購読
+- `Palette Asset Storage`
+- 必要なら `Dont Destroy On Load`
+- 必要なら `Included ProfileAssets`
 
-以下は `DragGestureHandlerUI` を使った最小例です。
+`Included ProfileAssets` に入れた Profile は Loader より優先されます。
+
+### 4. Initialize at runtime
+
+最小構成では、`Start` などから `PaletteEngine.InitializeAsync()` を呼びます。
+
+`UniTask` 利用時の例:
 
 ```csharp
+using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEnhancedGesture;
+using UnityGenericPalette;
 
-public sealed class DragExample : MonoBehaviour {
-    [SerializeField] private DragGestureHandlerUI _dragGestureHandler;
-
-    private void OnEnable() {
-        if (_dragGestureHandler == null) {
-            return;
-        }
-
-        _dragGestureHandler.BeginDragEvent += OnBeginDrag;
-        _dragGestureHandler.DragEvent += OnDrag;
-        _dragGestureHandler.EndDragEvent += OnEndDrag;
-        _dragGestureHandler.CancelDragEvent += OnCancelDrag;
+public sealed class PaletteBootstrap : MonoBehaviour {
+    private void Start() {
+        InitializeAsync().Forget();
     }
 
-    private void OnDisable() {
-        if (_dragGestureHandler == null) {
-            return;
-        }
-
-        _dragGestureHandler.BeginDragEvent -= OnBeginDrag;
-        _dragGestureHandler.DragEvent -= OnDrag;
-        _dragGestureHandler.EndDragEvent -= OnEndDrag;
-        _dragGestureHandler.CancelDragEvent -= OnCancelDrag;
-    }
-
-    private void OnBeginDrag(DragGestureEvent gestureEvent) {
-        Debug.Log($"Begin: {gestureEvent.StartPosition}");
-    }
-
-    private void OnDrag(DragGestureEvent gestureEvent) {
-        Debug.Log($"Delta: {gestureEvent.Delta}, Total: {gestureEvent.TotalDelta}");
-    }
-
-    private void OnEndDrag(DragGestureEvent gestureEvent) {
-        Debug.Log($"End: {gestureEvent.Position}");
-    }
-
-    private void OnCancelDrag(DragGestureEvent gestureEvent) {
-        Debug.Log("Canceled");
+    private async UniTaskVoid InitializeAsync() {
+        await PaletteEngine.InitializeAsync();
     }
 }
 ```
 
-`ManualUpdate` を使う場合は、任意の更新ループから次のように呼びます。
+`DefaultProfileId` が設定された Palette は、この初期化時に反映されます。
+
+### 5. Add appliers
+
+対象コンポーネントに組み込み `Applier` を追加し、`EntryId` を設定します。
+
+- `GraphicColorPaletteApplier`
+- `TmpTextStylePaletteApplier`
+- `LegacyTextStylePaletteApplier`
+
+`PaletteApplierBase` は現在の `Profile` を購読し、対応する `EntryId` の値を受け取ると `ApplyValue` を呼びます。
+
+## Runtime API
+
+主な API は次のとおりです。
+
+- `PaletteEngine.InitializeAsync()`
+- `PaletteEngine.SetLoader(IPaletteProfileLoader loader)`
+- `PaletteEngine.ChangeProfileAsync<TProfileAsset>(string profileId)`
+
+例:
 
 ```csharp
+using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEnhancedGesture;
+using UnityGenericPalette;
 
-public sealed class GestureCoordinatorDriver : MonoBehaviour {
-    [SerializeField] private GestureCoordinator _gestureCoordinator;
-
-    private void Update() {
-        if (_gestureCoordinator == null) {
-            return;
-        }
-
-        _gestureCoordinator.ManualUpdate();
+public sealed class LocaleSwitcher : MonoBehaviour {
+    public async UniTask SwitchToJapaneseAsync() {
+        await PaletteEngine.ChangeProfileAsync<TextStylePaletteProfileAsset>("Japanese");
     }
 }
 ```
 
-## Supported Gestures
+## Addressables Integration
 
-### Drag
+Addressables を使う場合は、`GuidBaseAddressablesLoader` を利用できます。
 
-ドラッグ系は `BeginDragEvent` / `DragEvent` / `EndDragEvent` / `CancelDragEvent` を購読します。
+前提:
 
-主な設定項目:
+- `com.unity.addressables` が入っていること
+- Addressables Catalog から GUID で引けること
 
-- `DragStartThreshold`
-- `EnableLongTapDrag`
-- `LongTapDragDuration`
-- `LongTapDragMaxMovement`
-- `Priority`
+サンプル:
 
-`DragGestureEvent` から主に次を取得できます。
+```csharp
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UnityGenericPalette;
 
-- `StartMode`
-  - `Immediate`
-  - `LongTap`
-- `StartPosition`
-- `Position`
-- `Delta`
-- `TotalDelta`
-- `Samples`
-- `Duration`
-- `ActivePointerCount`
-- `EventCamera`
+public sealed class PaletteBootstrap : MonoBehaviour {
+    private void Start() {
+        InitializeAsync().Forget();
+    }
 
-### Tap
+    private async UniTaskVoid InitializeAsync() {
+        PaletteEngine.SetLoader(new GuidBaseAddressablesLoader());
+        await PaletteEngine.InitializeAsync();
+    }
+}
+```
 
-タップ系は `TapEvent` / `DoubleTapEvent` / `LongTapEvent` を購読します。
+`GuidBaseAddressablesLoader` は `PaletteAssetBase` にシリアライズされた `ProfileId -> GUID` 対応表を使って `Addressables.LoadAssetAsync<TProfileAsset>(guid)` を呼びます。
 
-主な設定項目:
+## Loader and GUID Synchronization
 
-- `MaxTapDuration`
-- `MaxTapMovement`
-- `EnableDoubleTap`
-- `DoubleTapMaxDelay`
-- `DoubleTapMaxMovement`
-- `EnableLongTap`
-- `LongTapDuration`
-- `LongTapMaxMovement`
-- `Priority`
+Editor は `PaletteProfileAsset` の作成・リネーム・削除・Project 変更時に `ProfileId -> GUID` 対応表を自動同期します。
 
-`TapGestureEvent` から主に次を取得できます。
+同期対象:
 
-- `Type`
-  - `SingleTap`
-  - `DoubleTap`
-  - `LongTap`
-- `TapCount`
-- `FirstTapPosition`
-- `StartPosition`
-- `Position`
-- `Samples`
-- `Duration`
-- `Interval`
-- `EventCamera`
+- 欠損した参照
+- 重複 `ProfileId`
+- 古い GUID
+- 空 `GUID`
+- 孤立した `DefaultProfileId`
 
-注意点:
+この対応表は、ランタイムが `AssetDatabase` なしで Loader に GUID を渡すために使われます。
 
-- `EnableDoubleTap` が有効な場合、単一タップ通知は即時ではなくダブルタップ待機後に確定します
+## Extending with Custom Palettes
 
-### Pinch
+独自パレットを追加したい場合は、次の 2 型を作ります。
 
-ピンチ系は `BeginPinchEvent` / `PinchEvent` / `EndPinchEvent` / `CancelPinchEvent` を購読します。
+1. `PaletteAssetBase` 派生型
+2. `PaletteProfileAssetBase<TPaletteAsset, TValue>` 派生型
 
-主な設定項目:
+`PaletteAsset` 側には、対応する Profile 型を示す属性を付けます。
 
-- `PinchStartThreshold`
-- `Priority`
+```csharp
+using UnityEngine;
 
-`PinchGestureEvent` から主に次を取得できます。
+namespace UnityGenericPalette {
+    [PaletteProfileAsset(typeof(MyPaletteProfileAsset))]
+    public sealed class MyPaletteAsset : PaletteAssetBase {
+    }
 
-- `StartCenter`
-- `Center`
-- `CenterDelta`
-- `StartDistance`
-- `Distance`
-- `DeltaDistance`
-- `Scale`
-- `StartAngle`
-- `Angle`
-- `DeltaAngle`
-- `TotalAngleDelta`
-- `FirstPosition`
-- `SecondPosition`
-- `Duration`
-- `EventCamera`
+    public sealed class MyPaletteProfileAsset : PaletteProfileAssetBase<MyPaletteAsset, MyValueType> {
+    }
+}
+```
 
-## Priority と競合
+必要に応じて追加するもの:
 
-開始位置に対して複数のハンドラーが反応可能な場合は、`Priority` が高いハンドラーが優先されます。  
-同じオブジェクトに複数のジェスチャー種別を共存させることはできますが、同じ種別で重なる構成では `Priority` を明示しておくと意図が分かりやすくなります。
+- `PropertyDrawer`
+- `Applier`
+- 独自 `Loader`
 
-## Editor Testing
+## Sample
 
-Unity Editor では実機がなくても基本挙動を確認できます。
-
-- 通常操作はマウス左ドラッグで確認
-- ピンチは `Alt + Drag` で 2 点入力をシミュレート
-- 実機では `EnhancedTouch`、Editor では状況に応じてマウス入力へフォールバック
-
-`GestureCoordinator` を `External` モードで使う場合は、事前に `EnhancedTouchSupport.Enable()` を有効化してください。
-
-## Sample Scene
-
-このリポジトリには動作確認用のサンプルシーンが含まれています。
+サンプルアセットは次にあります。
 
 - Scene: `Assets/Sample/Scenes/SampleScene.unity`
-- Script:
-  - `Assets/Sample/Scripts/SampleCamera.cs`
-  - `Assets/Sample/Scripts/SampleCube.cs`
+- Script: `Assets/Sample/Scripts/Sample.cs`
+- Palette assets: `Assets/Sample/UnityGenericPalette`
 
-サンプルでは次を確認できます。
-
-- UI 領域上でのドラッグによるカメラ移動
-- UI 領域上でのピンチによるズーム
-- 3D オブジェクトに対するドラッグ操作
+サンプルでは `GuidBaseAddressablesLoader` を設定して `PaletteEngine.InitializeAsync()` を呼ぶ流れを確認できます。
 
 ## Repository Layout
 
 ```text
-Packages/com.daitokuamy.unityenhancedgesture/
+Packages/com.daitokuamy.unitygenericpalette/
   Editor/
   Runtime/
 Assets/Sample/
 docs/specs/
 ```
 
-- `Packages/com.daitokuamy.unityenhancedgesture`
+- `Packages/com.daitokuamy.unitygenericpalette`
   - 配布対象の UPM パッケージ本体
 - `Assets/Sample`
   - 動作確認用のサンプルアセット
 - `docs/specs`
-  - 仕様メモと設計整理用ドキュメント
+  - 実装寄りの仕様整理ドキュメント
+
+## Limitations
+
+- `Gradient` 用の組み込み `Applier` はまだありません
+- Addressables Group の自動構成は行いません
+- `Profile` の表示名や説明を別定義で持つ仕組みはまだありません
 
 ## License
 
 MIT License
+
+<!-- TODO: Add a PNG for the overall setup flow: Project Settings -> PaletteEditorWindow -> PaletteEngine -> Applier. -->
+<!-- TODO: Add a GIF that shows Profile creation, Default setting, and live preview update timing. -->
+<!-- TODO: Add a PNG or GIF for Addressables setup, especially the GUID-based loading configuration. -->

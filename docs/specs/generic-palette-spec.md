@@ -2,320 +2,321 @@
 
 ## Scope
 
-この文書は、`Unity Generic Palette` のデータ仕様を定義する。
+この文書は、`Unity Generic Palette` の現行実装に対応するデータ仕様と責務分担を定義する。
 
-現時点では次を対象にする。
+対象に含めるもの:
 
-- アセットの責務分割
-- `Profile` 切り替え時に必要な保存情報
-- `Loader` を介したアセット差し替えの前提
-- 整合性を守るための不変条件
+- `PaletteAssetStorage` / `PaletteAsset` / `PaletteProfileAsset` の構造
+- `ProfileId` と `GUID` の対応情報
+- `PaletteEngine` による `Profile` 切り替えフロー
+- `IPaletteProfileLoader` と Addressables 連携の前提
+- Editor による同期・検証・既定 Profile 運用
 
-現時点では次を対象外とする。
+対象に含めないもの:
 
-- ランタイム API の最終形
-- 値変更通知の詳細仕様
-- Binding の反映タイミング
-- 非同期ロード制御の詳細
+- 個別 `Applier` の見た目や UI デザイン
+- 各値型に対する演出的な適用ルール
+- Addressables Group 構成の詳細ベストプラクティス
+- 利用側アプリケーションの状態管理設計
 
-## 目的
+## Goals
 
-本仕様では、次の条件を満たす設計を定義する。
+本仕様は次の条件を満たすことを目的とする。
 
-- 構造が過度に分割されず、追いやすいこと
-- `Theme` 専用ではなく、ローカライズやイベント切り替えにも流用できること
-- `PaletteAsset` ごとに `EntryId` 集合が安定していること
-- `Profile` ごとの実データを必要に応じて別アセット化できること
-- `PreloadedAssets` に依存せず、明示的なロードフローを採用できること
-- `Loader` を差し替えることで Addressables を含む複数運用へ適応できること
+- `EntryId` を軸に、`Palette` ごとの値参照を安定させる
+- `Profile` の切り替えを値型ごとに一元管理できる
+- 組み込み Profile と外部ロード Profile を同じ API で扱える
+- ランタイムでは `AssetDatabase` に依存しない
+- Editor で `ProfileId -> GUID` の不整合を検出し、自動同期できる
 
-## 用語
+## Terms
 
-| 用語 | 意味 |
+| Term | Meaning |
 | --- | --- |
-| PaletteAssetStorage | 全 Palette 情報と Profile 情報を管理するルートアセット |
-| PaletteAsset | 1 種類の Palette を表すアセット。`EntryId` 集合とメタ情報を持つ |
-| PaletteEntry | `PaletteAsset` に属する要素 1 件分の定義 |
-| EntryId | `PaletteAsset` 内で各要素を一意に識別する安定 ID |
-| Profile | `Theme`、言語、イベント状態などを表現する切り替え単位 |
-| PaletteProfileAsset | ある `PaletteAsset` の、ある `Profile` における値集合を保持する別アセット |
-| EntryValue | `EntryId x Profile` の交点にある実値 |
-| Loader | `Profile` 切り替え時に対応アセットを解決する差し替え可能な仕組み |
-| Loader Key | `Loader` がアセット解決に使う識別子 |
+| PaletteAssetStorage | 登録済み `PaletteAsset` 一覧を保持するルートアセット |
+| PaletteAsset | 1 種類の Palette を表すスキーマアセット |
+| PaletteEntry | `PaletteAsset` に含まれる 1 件のエントリ定義 |
+| EntryId | `PaletteAsset` 内で要素を一意に識別する安定 ID |
+| PaletteProfileAsset | 特定 `PaletteAsset` に対する特定 `Profile` の値集合アセット |
+| ProfileId | `PaletteProfileAsset` を論理的に識別する ID |
+| ProfileReferenceInfo | `ProfileId` と `ProfileAsset GUID` の対応情報 |
+| Included ProfileAsset | `PaletteEngine` が Loader を使わず優先利用する組み込み Profile アセット |
+| Loader | 外部ソースから `PaletteProfileAsset` をロード・解放する仕組み |
 
-## 基本方針
-
-### 1. `PaletteAsset` はスキーマとして扱う
-
-`PaletteAsset` の責務は、値を大量に抱えることではなく、その Palette に属する `EntryId` 集合とメタ情報を安定して保持することである。
-
-ここで重要なのは次の点である。
-
-- 同じ `PaletteAsset` に対して、どの `Profile` を選んでも `EntryId` 集合は変わらない
-- rename や表示名変更と、内部識別子である `EntryId` は分けて扱う
-- Profile ごとの差し替えは、`EntryId` 集合を保ったまま値だけを切り替える
-
-### 2. `Profile` ごとの実値は別アセット化できるようにする
-
-`Profile` を多く持つ場合に全データを常時オンメモリにしないため、`Profile` ごとの値は `PaletteAsset` 本体ではなく別アセットとして保持できる構造を採用する。
-
-これにより、次を狙う。
-
-- `PaletteAssetStorage` と `PaletteAsset` は軽量に保つ
-- 必要な `Profile` の実値だけをロードできる
-- テーマ用途とローカライズ用途でロード粒度を調整できる
-
-### 3. `Profile` 切り替えは `Loader` を経由する
-
-`PaletteAssetStorage` の `Profile` 切り替え時は、登録された `Loader` に対して各 `PaletteAsset` の差し替え候補を問い合わせる前提とする。
-
-このとき、アセット解決のために使うキーは固定せず、少なくとも次を選択肢に含める。
-
-- `GUID`
-- `AssetPath`
-- `CustomString`
-
-どのキー方式を採用する場合でも、ランタイムでは `AssetDatabase` を使わずに済むよう、必要な文字列はシリアライズ済みの形で保持する。
-
-## 想定パッケージ構成
+## Current Package Structure
 
 ```text
 Runtime/
+  Color/
   Core/
-  Binding/
+  Gradient/
+  Text/
+  UI/
 Editor/
-Tests/
+docs/specs/
 ```
 
-各ディレクトリの責務は次のとおり。
-
 - `Runtime/Core`
-  データモデル、Storage、Profile 切り替え、Loader 連携の中核
-- `Runtime/Binding`
-  解決済みの値をコンポーネントへ反映する仕組み
+  - コアデータ型、`PaletteEngine`、`Loader` 契約、`Profile` コンテキストを提供する
+- `Runtime/Color`
+  - `Color` 用の組み込みパレット型を提供する
+- `Runtime/Gradient`
+  - `Gradient` 用の組み込みパレット型を提供する
+- `Runtime/Text`
+  - `TMP` / `Legacy UI.Text` 向けテキストスタイル値を提供する
+- `Runtime/UI`
+  - 組み込み `Applier` を提供する
 - `Editor`
-  アセット作成、整合性維持、Profile データ編集、Loader キー更新補助
-- `Tests`
-  データ整合性と Profile 切り替え前提の検証
+  - `PaletteEditorWindow`、Project Settings、参照表同期、値編集 UI を提供する
 
-## データモデル
+## Built-in Palette Types
+
+現行の組み込み型は次のとおり。
+
+| Palette Type | Profile Value Type | Built-in Applier |
+| --- | --- | --- |
+| `ColorPaletteAsset` | `UnityEngine.Color` | `GraphicColorPaletteApplier` |
+| `TextStylePaletteAsset` | `TextStylePaletteValue` | `TmpTextStylePaletteApplier` |
+| `LegacyTextStylePaletteAsset` | `LegacyTextStylePaletteValue` | `LegacyTextStylePaletteApplier` |
+| `GradientPaletteAsset` | `UnityEngine.Gradient` | なし |
+
+`Gradient` は値型として利用可能だが、現時点では組み込み `Applier` を持たない。
+
+## Data Model
 
 ### PaletteAssetStorage
 
-`PaletteAssetStorage` はルートアセットであり、全体の参照関係と切り替え情報を管理する。
+`PaletteAssetStorage` は `PaletteAsset` の登録一覧を保持するルートアセットである。
 
-最低限、次の情報を持つ。
+保持項目:
 
-- Storage ID
-- Display Name
-- `Profile` 定義一覧
-- 登録済み `PaletteAsset` 一覧
-- 初期 Active Profile
-- `Loader` 解決に必要なキー情報
+- `PaletteAssets`
 
-`PaletteAssetStorage` 自体は、全 `Profile` の全値を内包する前提にはしない。
+責務:
 
-### PaletteAsset
+- `PaletteEngine.InitializeAsync()` が初期化対象の `PaletteAsset` 一覧を列挙するための起点となる
+- Editor から作成される `PaletteAsset` の登録先となる
 
-`PaletteAsset` は `PaletteAssetStorage` に属する 1 つの Palette を表す。
+### PaletteAssetBase
 
-最低限、次の情報を持つ。
+`PaletteAssetBase` はすべての Palette 型の共通基底である。
 
-- Palette ID
-- Display Name
-- 値型情報
-- `PaletteEntry` 一覧
+保持項目:
 
-`PaletteAsset` の主責務は `EntryId` 集合の保持であり、`Profile` ごとの大量データを直接持つ責務は負わない。
+- `Entries`
+- `DefaultProfileId`
+- `ProfileReferences`
+
+責務:
+
+- `EntryId` 集合の保持
+- `EntryId -> index` キャッシュ
+- `ProfileId -> AssetGuid` キャッシュ
+
+仕様:
+
+- `Entries[i]` と `PaletteProfileAsset.Values[i]` は同じ index で対応する
+- `DefaultProfileId` はこの Palette の初期適用候補を表す
+- `ProfileReferences` は `ProfileId` と `GUID` のペアをシリアライズ保持する
 
 ### PaletteEntry
 
-`PaletteEntry` は `PaletteAsset` に属する要素 1 件分の定義である。
+`PaletteEntry` は `PaletteAsset` に属する 1 件のエントリ定義である。
 
-最低限、次の情報を持つ。
+保持項目:
 
 - `EntryId`
-- Display Name
-- 任意の説明
+- `DisplayName`
+- `Description`
 
-必要であれば、将来的に次のメタ情報を持てるようにしてよい。
+仕様:
 
-- 並び順
-- 廃止フラグ
-- 検索用タグ
+- `EntryId` は値適用の主キーであり、表示名変更とは独立して扱う
+- 同一 `PaletteAsset` 内で `EntryId` は重複してはならない
 
-### ProfileDefinition
+### PaletteProfileAssetBase
 
-`Profile` 定義は `PaletteAssetStorage` に集約する。
+`PaletteProfileAssetBase` はすべての Profile アセットの共通基底である。
 
-最低限、次の情報を持つ。
+保持項目:
 
-- Profile ID
-- Display Name
-- 任意の説明
+- `ProfileId`
+- `SortOrder`
 
-`Profile` は用途を限定しない。
-`Dark`、`Light`、`Ja`、`En`、`EventA` のような異なる意味の切り替えを同じ概念で扱える。
+`PaletteProfileAssetBase<TPaletteAsset, TValue>` は追加で次を持つ。
+
+- 対象 `PaletteAsset`
+- `Values`
+
+仕様:
+
+- `Values.Length` は対応する `PaletteAsset.Entries.Count` と一致している必要がある
+- `Values[i]` は `PaletteAsset.Entries[i]` に対応する
+- 値参照は `EntryId` 文字列を各要素に重複保持せず、index ベースで解決する
+
+### ProfileReferenceInfo
+
+`ProfileReferenceInfo` は `PaletteAssetBase.ProfileReferences` の要素である。
+
+保持項目:
+
+- `ProfileId`
+- `AssetGuid`
+
+用途:
+
+- ランタイムで `AssetDatabase` を使わず、`Loader` に対して GUID を渡す
+- Editor で `PaletteProfileAsset` の生成・リネーム・削除・`.meta` 再生成に追従する
+
+## Runtime Flow
+
+### Initialization
+
+`PaletteEngine.InitializeAsync()` は `PaletteAssetStorage` を列挙し、`DefaultProfileId` が設定された Palette を初期化する。
+
+制約:
+
+- 同一 `ProfileAsset` 型に対して複数の `DefaultProfileId` を同時に初期化することはできない
+- `InitializeAsync()` は `ProfileAsset` 型ごとに 1 つの既定 Profile だけを許容する
+
+### Profile Change
+
+`PaletteEngine.ChangeProfileAsync<TProfileAsset>(profileId)` の動作は次のとおり。
+
+1. `profileId` の妥当性を検証する
+2. `Included ProfileAsset` 一覧から一致する `ProfileId` を探す
+3. 見つからない場合は `PaletteAssetBase.ProfileReferences` から `profileGuid` を解決する
+4. `IPaletteProfileLoader.LoadAsync(profileId, profileGuid, cancellationToken)` を呼ぶ
+5. 解決された `PaletteProfileAsset` を current として保持する
+6. 購読中 `Applier` へ変更通知を発火する
+
+補足:
+
+- Loader が返した `PaletteProfileAsset` は、解決元 `PaletteAsset` と一致しなければならない
+- Loader 管理下の Profile は、次の Profile 適用時に `Unload` 対象となる
+- 同一 `ProfileAsset` 型に対する同時切り替えはサポートしない
+
+## Loader Contract
+
+### IPaletteProfileLoader
+
+`IPaletteProfileLoader` は次の契約を持つ。
+
+- `LoadAsync<TProfileAsset>(string profileId, string profileGuid, CancellationToken cancellationToken)`
+- `Unload(PaletteProfileAssetBase profileAsset)`
+
+意図:
+
+- `profileId` は論理的識別子として保持する
+- `profileGuid` はロード手段向けの物理キーとして使う
+
+### GuidBaseAddressablesLoader
+
+`GuidBaseAddressablesLoader` は `#if USE_ADDRESSABLES` 時のみ有効な組み込み Loader である。
+
+仕様:
+
+- `Addressables.LoadAssetAsync<TProfileAsset>(profileGuid)` でロードする
+- ロード成功時は `AsyncOperationHandle` を内部保持する
+- `Unload` 時に `Addressables.Release(handle)` を呼ぶ
+
+利用前提:
+
+- Addressables の Catalog で GUID を解決可能にしておく必要がある
+- 代表的には `Include GUID in Catalog` を有効化した運用を想定する
+
+## Editor Behavior
+
+### Palette Editor
+
+`PaletteEditorWindow` は次の用途を担当する。
+
+- `PaletteAssetStorage` の作成・選択
+- `PaletteAsset` の作成・削除
+- `PaletteProfileAsset` の作成・削除・並び替え
+- `Entry` と `Profile Value` の編集
+- `DefaultProfileId` の設定
+
+### Default Reflection Rule
+
+Editor 上で preview 用 current profile が切り替わるのは、`Default` 設定時のみとする。
+
+現在の仕様:
+
+- Profile リスト選択だけでは current profile は切り替えない
+- Profile Popup 選択だけでは current profile は切り替えない
+- Profile 作成直後も自動反映しない
+- `Default` を設定したときだけ current profile を更新する
+
+### Profile Reference Synchronization
+
+`PaletteProfileReferenceEditorUtility` は `ProfileReferences` を同期・検証する。
+
+同期タイミング:
+
+- Editor 起動時
+- Project 変更時
+- Profile 作成時
+- Profile リネーム時
+- Profile 削除時
+
+検出対象:
+
+- 空エントリ
+- 空 `ProfileId`
+- 空 `GUID`
+- 重複 `ProfileId`
+- `GUID` の不一致
+- 孤立した `DefaultProfileId`
+
+方針:
+
+- 実在する `PaletteProfileAsset` を正とし、`PaletteAssetBase.ProfileReferences` を再構築する
+- 不整合が見つかった場合は警告ログを出しつつ、自動修復を試みる
+
+### Profile Value Copy
+
+Profile 値のコピー機能は `SerializedProperty` ベースで動作し、`Gradient` を含む組み込み値型の複製に対応する。
+
+## Invariants
+
+### PaletteAsset
+
+- 同一 `PaletteAsset` 内で `EntryId` は重複しない
+- 同一 `PaletteAsset` 内で `ProfileReferences.ProfileId` は重複しない
+- `DefaultProfileId` が設定されている場合、その `ProfileId` に対応する `PaletteProfileAsset` が存在するのが望ましい
 
 ### PaletteProfileAsset
 
-`PaletteProfileAsset` は、ある `PaletteAsset` に対する、ある `Profile` の値集合を保持するアセットである。
+- `PaletteAssetBase` が null であってはならない
+- `ProfileId` は空であってはならない
+- `Values.Length == PaletteAsset.Entries.Length`
 
-最低限、次の情報を持つ。
+### PaletteEngine
 
-- 対象 `PaletteAsset` の識別情報
-- 対象 `Profile` の識別情報
-- `EntryValue` 配列
+- 同一 `ProfileAsset` 型に対する切り替え要求は逐次実行でなければならない
+- Loader ベース切り替えでは、対象 `ProfileAsset` 型に対する `PaletteAsset` が一意に決まる必要がある
+- `InitializeAsync()` では同一 `ProfileAsset` 型の既定 Profile 多重初期化を許容しない
 
-`PaletteProfileAsset` は、`PaletteAsset` と同じ `EntryId` 集合を前提とする。
-そのため、`EntryValue` の対応は `EntryId` 文字列の重複保持ではなく、`PaletteAsset` 側の定義順に合わせた配列対応を基本とする。
+## Extensibility
 
-つまり次の対応を前提とする。
+独自パレットを追加する場合は、少なくとも次を満たす。
 
-- `PaletteAsset.Entries[i]`
-- `PaletteProfileAsset.Values[i]`
+1. `PaletteAssetBase` 派生型を作る
+2. `PaletteProfileAssetAttribute(typeof(YourProfileAsset))` を付ける
+3. `PaletteProfileAssetBase<TPaletteAsset, TValue>` 派生型を作る
+4. 必要であれば `PropertyDrawer` と `Applier` を追加する
 
-### EntryValue
+`GradientPaletteAsset` は、組み込み `Applier` を持たない拡張例として位置付けられる。
 
-`EntryValue` は値そのものを保持する構造体またはクラスである。
+## Out of Scope
 
-型は Palette の種類ごとに異なるため、実体はジェネリックな仕組みまたは派生型で扱う。
+この文書では次を確定しない。
 
-重要なのは、`EntryValue` 自体が `EntryId` を主キーとして持つことではなく、`PaletteAsset` の定義順に従って対応付けられることである。
+- `Gradient` 用組み込み `Applier`
+- `Profile` の表示名や説明を別定義で持つ仕組み
+- Storage レベルの複雑な naming rule
+- Addressables Group 自動生成
 
-## Loader キー仕様
-
-### 目的
-
-`PaletteAssetStorage` の `Profile` 切り替え時、各 `PaletteAsset` に対して「どのアセットをロードするべきか」を `Loader` へ問い合わせるための識別情報が必要になる。
-
-この識別情報を `Loader Key` と呼ぶ。
-
-### Key の種類
-
-少なくとも次の 3 種類をサポート対象とする。
-
-- `Guid`
-- `AssetPath`
-- `CustomString`
-
-### Key の保持方法
-
-`GUID` と `AssetPath` は Editor 上では自動取得できるが、ランタイムでは `AssetDatabase` に依存できない。
-
-そのため、`PaletteAssetStorage` またはその配下の登録情報には、実際に `Loader` へ渡す文字列をシリアライズ済みで保持する。
-
-想定する保持項目は次のとおり。
-
-- Key Mode
-- Serialized Loader Key
-- 必要であれば補助メタデータ
-
-### Key の適用単位
-
-Key 指定は少なくとも `PaletteAsset` 単位で行える必要がある。
-
-必要に応じて次の拡張を許容する。
-
-- Storage 全体の既定 Key Mode
-- `PaletteAsset` ごとの override
-- `Profile` ごとの追加 suffix や naming rule
-
-ただし、v1 では naming rule を複雑化しすぎず、`Loader` 実装側で解決できる範囲を優先する。
-
-## Profile 切り替え時のデータフロー
-
-データ仕様としては、`Profile` 切り替え時に次の情報がそろっていることを保証する。
-
-1. `PaletteAssetStorage` が次の Active Profile を決定する
-2. 各 `PaletteAsset` について `Loader Key` を取得する
-3. `Loader` が `Profile` と `Loader Key` を使って対象アセットを解決する
-4. 解決結果として、対応する `PaletteProfileAsset` または同等のデータソースを得る
-5. 以降のランタイム層が解決済みデータを反映する
-
-この文書では 5 の詳細は定義しない。
-
-## 不変条件
-
-データ整合性のため、少なくとも次を保証する。
-
-### Storage 単位
-
-- `PaletteAssetStorage` 内で Palette ID は重複しない
-- `PaletteAssetStorage` 内で Profile ID は重複しない
-
-### PaletteAsset 単位
-
-- 1 つの `PaletteAsset` 内で `EntryId` は重複しない
-- `EntryId` は表示名変更とは独立して安定している
-
-### PaletteProfileAsset 単位
-
-- 対象 `PaletteAsset` が一意に定まる
-- 対象 `Profile` が一意に定まる
-- `Values.Length == PaletteAsset.Entries.Length` を満たす
-- `Values[i]` は `PaletteAsset.Entries[i]` に対応する
-
-### 編集操作時
-
-`PaletteAsset` 側で Entry の追加、削除、並び替えが行われた場合、関連するすべての `PaletteProfileAsset` は同じ変更を反映して整合を維持しなければならない。
-
-この同期は Editor 側の責務として扱う。
-
-## Editor 仕様
-
-Editor は最低限次の作業を支援する。
-
-- `PaletteAssetStorage` の作成
-- Profile の追加、削除、並び替え
-- `PaletteAsset` の追加、削除
-- `PaletteEntry` の追加、削除、並び替え
-- `PaletteProfileAsset` の作成と編集
-- `Loader Key` の更新補助
-- 整合性 validation
-
-特に重要なのは、`PaletteAsset` の変更時に `PaletteProfileAsset` 群の整合性を壊さないことだが、これを手作業で維持させないことである。
-
-## Runtime との接続に関する前提
-
-ランタイム API 自体は別途定義するが、データ仕様としては次を前提にする。
-
-- `PaletteAssetStorage` が Active Profile を持つ
-- Active Profile の変更が発生したら `Loader` 経由でデータ再解決が走る
-- 解決済みの Profile データを、ランタイム層が参照または反映する
-
-この前提により、ランタイム反映方式はあとから差し替えられる。
-
-## 初期スコープ
-
-v1 で最低限含めたい要素は次のとおり。
-
-- `PaletteAssetStorage`
-- `PaletteAsset`
-- `PaletteEntry`
-- `ProfileDefinition`
-- `PaletteProfileAsset`
-- `Loader Key` 情報
-- Editor 上の整合性維持
-
-## 将来拡張
-
-将来的に検討するが v1 では見送る項目を明記する。
-
-- 複数 Profile の同時合成
-- Profile 継承
-- Entry 単位の部分ロード
-- Profile Asset の分割キャッシュ戦略
-- コード生成による型安全アクセス
-- リモート設定や live update 連携
-
-## 採用判断の要約
-
-この設計では、`PaletteAsset` を「`EntryId` 集合を管理するスキーマ」として扱い、`Profile` ごとの実値を別アセットへ分離する。
-
-その結果、次を同時に満たしやすくなる。
-
-- `EntryId` の安定性を保ちやすい
-- Profile 数が増えても本体アセットを重くしにくい
-- `Loader` による差し替え戦略を持ち込みやすい
-- Addressables を含む複数のロード方針へ寄せやすい
+<!-- TODO: Add a short GIF showing that Profile list selection alone does not change preview, and Default button does. -->
+<!-- TODO: Add a PNG showing the ProfileReferenceInfo synchronization warning example after a .meta regeneration. -->

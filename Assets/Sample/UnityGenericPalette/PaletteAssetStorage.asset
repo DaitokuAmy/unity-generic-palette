@@ -48,6 +48,12 @@ MonoBehaviour:
   - _entryId: Accent01
     _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC01"
     _description: 
+  - _entryId: TextBlack
+    _displayName: "\u30C6\u30AD\u30B9\u30C8\u9ED2"
+    _description: 
+  - _entryId: TextWhite
+    _displayName: "\u30C6\u30AD\u30B9\u30C8\u767D"
+    _description: 
   _defaultProfileId: Default
   _profileReferences:
   - _profileId: Default
@@ -74,6 +80,9 @@ MonoBehaviour:
     _description: 
   - _entryId: Content02
     _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C802"
+    _description: 
+  - _entryId: Caption01
+    _displayName: "\u30AD\u30E3\u30D7\u30B7\u30E7\u30F301"
     _description: 
   _defaultProfileId: Japanese
   _profileReferences:

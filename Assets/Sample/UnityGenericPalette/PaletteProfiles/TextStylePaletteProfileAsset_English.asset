@@ -42,3 +42,16 @@ MonoBehaviour:
     _wordSpacing: 0
     _lineSpacing: 0
     _paragraphSpacing: 0
+  - _fontAsset: {fileID: 0}
+    _materialPreset: {fileID: 0}
+    _fontStyle: 0
+    _enableAutoSizing: 0
+    _fontSize: 0
+    _fontSizeMin: 0
+    _fontSizeMax: 0
+    _characterWidthAdjustment: 0
+    _lineSpacingAdjustment: 0
+    _characterSpacing: 0
+    _wordSpacing: 0
+    _lineSpacing: 0
+    _paragraphSpacing: 0
