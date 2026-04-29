@@ -1,5 +1,33 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7781068147370238263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9beb97510a2e784b89b8146cc41ce9c, type: 3}
+  m_Name: ColorPaletteAsset
+  m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.ColorPaletteAsset
+  _entries:
+  - _entryId: Base01
+    _displayName: "\u57FA\u672C\u30AB\u30E9\u30FC01"
+    _description: 
+  - _entryId: Main01
+    _displayName: "\u30E1\u30A4\u30F3\u30AB\u30E9\u30FC01"
+    _description: 
+  - _entryId: Positive01
+    _displayName: "\u30DD\u30B8\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC01"
+    _description: 
+  - _entryId: Negative01
+    _displayName: "\u30CD\u30AC\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC01"
+    _description: 
+  - _entryId: Accent01
+    _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC01"
+    _description: 
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12,4 +40,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd61463ce71571047afd48adeabfae31, type: 3}
   m_Name: PaletteAssetStorage
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.PaletteAssetStorage
-  _paletteAssets: []
+  _paletteAssets:
+  - {fileID: -7781068147370238263}

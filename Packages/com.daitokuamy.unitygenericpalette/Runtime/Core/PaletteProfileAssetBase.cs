@@ -12,6 +12,8 @@ namespace UnityGenericPalette {
         where TPaletteAsset : PaletteAssetBase {
         [SerializeField, Tooltip("対応する Profile の ID")]
         private string _profileId;
+        [SerializeField, Tooltip("Profile 一覧表示用の並び順")]
+        private int _sortOrder;
         [SerializeField, Tooltip("対応する Palette アセット")]
         private TPaletteAsset _paletteAsset;
         [SerializeField, Tooltip("EntryId と値を対応付けた一覧")]
@@ -20,6 +22,8 @@ namespace UnityGenericPalette {
         
         /// <summary>対応する Profile の ID</summary>
         public string ProfileId => _profileId;
+        /// <summary>Profile 一覧表示用の並び順</summary>
+        public int SortOrder => _sortOrder;
         /// <summary>対応する Palette アセット</summary>
         public TPaletteAsset PaletteAsset => _paletteAsset;
         /// <summary>対応する Palette アセット</summary>
