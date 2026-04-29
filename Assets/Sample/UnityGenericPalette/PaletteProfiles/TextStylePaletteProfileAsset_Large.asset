@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1a3bd5acd2d43d4bc354539092250d2, type: 3}
-  m_Name: TextStylePaletteProfileAsset_Japanese
+  m_Name: TextStylePaletteProfileAsset_Large
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TextStylePaletteProfileAsset
-  _profileId: Japanese
-  _sortOrder: 0
-  _paletteAsset: {fileID: -5720060537414394017, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
+  _profileId: Large
+  _sortOrder: 1
+  _paletteAsset: {fileID: -2765274703503311300, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
   _values:
   - _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-    _materialPreset: {fileID: 0}
+    _materialPreset: {fileID: 2100000, guid: 79459efec17a4d00a321bdcc27bbc385, type: 2}
     _fontStyle: 0
     _enableAutoSizing: 0
-    _fontSize: 32
-    _fontSizeMin: 1
-    _fontSizeMax: 100
+    _fontSize: 72
+    _fontSizeMin: 0
+    _fontSizeMax: 0
     _characterWidthAdjustment: 0
     _lineSpacingAdjustment: 0
     _characterSpacing: 0
@@ -33,20 +33,7 @@ MonoBehaviour:
     _materialPreset: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     _fontStyle: 0
     _enableAutoSizing: 0
-    _fontSize: 64
-    _fontSizeMin: 0
-    _fontSizeMax: 0
-    _characterWidthAdjustment: 0
-    _lineSpacingAdjustment: 0
-    _characterSpacing: 0
-    _wordSpacing: 0
-    _lineSpacing: 0
-    _paragraphSpacing: 0
-  - _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-    _materialPreset: {fileID: 2100000, guid: e73a58f6e2794ae7b1b7e50b7fb811b0, type: 2}
-    _fontStyle: 1
-    _enableAutoSizing: 0
-    _fontSize: 40
+    _fontSize: 60
     _fontSizeMin: 0
     _fontSizeMax: 0
     _characterWidthAdjustment: 0

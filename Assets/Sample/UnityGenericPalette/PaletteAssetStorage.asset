@@ -1,26 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8203029436194836012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06a5bb509902491c850efbe2cabc4793, type: 3}
-  m_Name: GradientPaletteAsset
-  m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.GradientPaletteAsset
-  _entries:
-  - _entryId: Fire
-    _displayName: "\u708E\u30B0\u30E9\u30C7\u30FC\u30B7\u30E7\u30F3"
-    _description: 
-  _defaultProfileId: Default
-  _profileReferences:
-  - _profileId: Default
-    _assetGuid: 4c3444ee11031564d942264c0b383dcb
---- !u!114 &-7781068147370238263
+--- !u!114 &-9102117293650732433
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -34,35 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.ColorPaletteAsset
   _entries:
   - _entryId: Base01
-    _displayName: "\u57FA\u672C\u30AB\u30E9\u30FC01"
+    _displayName: "\u30D9\u30FC\u30B9\u30AB\u30E9\u30FC"
     _description: 
   - _entryId: Main01
-    _displayName: "\u30E1\u30A4\u30F3\u30AB\u30E9\u30FC01"
-    _description: 
-  - _entryId: Positive01
-    _displayName: "\u30DD\u30B8\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC01"
-    _description: 
-  - _entryId: Negative01
-    _displayName: "\u30CD\u30AC\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC01"
+    _displayName: "\u30D9\u30FC\u30B9\u30AB\u30E9\u30FC"
     _description: 
   - _entryId: Accent01
-    _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC01"
+    _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC"
     _description: 
-  - _entryId: TextBlack
-    _displayName: "\u30C6\u30AD\u30B9\u30C8\u9ED2"
+  - _entryId: Position01
+    _displayName: "\u30DD\u30B8\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC"
     _description: 
-  - _entryId: TextWhite
-    _displayName: "\u30C6\u30AD\u30B9\u30C8\u767D"
+  - _entryId: Negative01
+    _displayName: "\u30CD\u30AC\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC"
     _description: 
-  _defaultProfileId: Default
+  _defaultProfileId: Green
   _profileReferences:
-  - _profileId: Default
+  - _profileId: Green
     _assetGuid: b4fbb08bcb6029840b0a7fddcdc39219
   - _profileId: Purple
-    _assetGuid: b5b49bd3821f1df47821570ecc9f74f2
+    _assetGuid: 0cd9594b294fccf4195af91bde3e2dd1
   - _profileId: Red
-    _assetGuid: 4a925038cc9265e41a0415e309073a61
---- !u!114 &-5720060537414394017
+    _assetGuid: f25f5aa4f9c244140b53ca822f42c435
+--- !u!114 &-2765274703503311300
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -75,21 +49,18 @@ MonoBehaviour:
   m_Name: TextStylePaletteAsset
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TextStylePaletteAsset
   _entries:
-  - _entryId: Content01
-    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C801"
-    _description: 
-  - _entryId: Content02
-    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C802"
-    _description: 
   - _entryId: Caption01
-    _displayName: "\u30AD\u30E3\u30D7\u30B7\u30E7\u30F301"
+    _displayName: "\u30AD\u30E3\u30D7\u30B7\u30E7\u30F3"
     _description: 
-  _defaultProfileId: Japanese
+  - _entryId: Content01
+    _displayName: "\u5185\u5BB9"
+    _description: 
+  _defaultProfileId: Medium
   _profileReferences:
-  - _profileId: English
-    _assetGuid: 97ee8a9429903624aa41b45eced35e4c
-  - _profileId: Japanese
-    _assetGuid: 793b9e0cf549444498b757d75be8ce97
+  - _profileId: Large
+    _assetGuid: e8adb2a15b666cf4fbf45f183c2952b0
+  - _profileId: Medium
+    _assetGuid: ccf6c3b263f66ad438cb80a79ba2db3e
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103,32 +74,5 @@ MonoBehaviour:
   m_Name: PaletteAssetStorage
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.PaletteAssetStorage
   _paletteAssets:
-  - {fileID: -7781068147370238263}
-  - {fileID: -5720060537414394017}
-  - {fileID: 8268592430131601973}
-  - {fileID: -8203029436194836012}
---- !u!114 &8268592430131601973
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f924dedb83cc444e8fdcd0bd5f3724ee, type: 3}
-  m_Name: LegacyTextStylePaletteAsset
-  m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.LegacyTextStylePaletteAsset
-  _entries:
-  - _entryId: Content01
-    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C801"
-    _description: 
-  - _entryId: Content02
-    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C802"
-    _description: 
-  _defaultProfileId: Default
-  _profileReferences:
-  - _profileId: Default
-    _assetGuid: 50361ce8643be6d40b8480cf48897947
-  - _profileId: Test
-    _assetGuid: d153cc8f1519c1043a42bd5f644f1c83
+  - {fileID: -9102117293650732433}
+  - {fileID: -2765274703503311300}

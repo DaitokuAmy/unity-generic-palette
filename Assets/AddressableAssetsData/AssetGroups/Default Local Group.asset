@@ -15,48 +15,33 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: 04fdfaec883820440b00ad373804cdca
   m_SerializeEntries:
+  - m_GUID: 0cd9594b294fccf4195af91bde3e2dd1
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Purple.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 422c8164ea2e8f148b4f170a7d9b06d8
     m_Address: Assets/Sample/UnityGenericPalette/PaletteAssetStorage.asset
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4a925038cc9265e41a0415e309073a61
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Red.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4c3444ee11031564d942264c0b383dcb
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/GradientPaletteProfileAsset_Default.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 50361ce8643be6d40b8480cf48897947
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/LegacyTextStylePaletteProfileAsset_Default.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 793b9e0cf549444498b757d75be8ce97
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/TextStylePaletteProfileAsset_Japanese.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 97ee8a9429903624aa41b45eced35e4c
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/TextStylePaletteProfileAsset_English.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b4fbb08bcb6029840b0a7fddcdc39219
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Default.asset
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Green.asset
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b5b49bd3821f1df47821570ecc9f74f2
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Purple.asset
+  - m_GUID: ccf6c3b263f66ad438cb80a79ba2db3e
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/TextStylePaletteProfileAsset_Medium.asset
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: d153cc8f1519c1043a42bd5f644f1c83
-    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/LegacyTextStylePaletteProfileAsset_Test.asset
+  - m_GUID: e8adb2a15b666cf4fbf45f183c2952b0
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/TextStylePaletteProfileAsset_Large.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f25f5aa4f9c244140b53ca822f42c435
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Red.asset
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

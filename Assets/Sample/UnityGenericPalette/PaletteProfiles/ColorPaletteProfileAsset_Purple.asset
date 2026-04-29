@@ -14,12 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.ColorPaletteProfileAsset
   _profileId: Purple
   _sortOrder: 1
-  _paletteAsset: {fileID: -7781068147370238263, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
+  _paletteAsset: {fileID: -9102117293650732433, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
   _values:
-  - {r: 0.6, g: 0.29803926, b: 0.6, a: 1}
-  - {r: 0.3, g: 0.14901963, b: 0.3, a: 1}
-  - {r: 0.5019608, g: 0.5019608, b: 1, a: 1}
-  - {r: 1, g: 0.5, b: 0.5, a: 1}
-  - {r: 1, g: 0.8847059, b: 0.3, a: 1}
-  - {r: 0.05, g: 0.047708333, b: 0.0475, a: 1}
-  - {r: 0.95, g: 0.95, b: 0.95, a: 1}
+  - {r: 0.8, g: 0.4, b: 0.8, a: 1}
+  - {r: 0.29803923, g: 0.14901961, b: 0.29803923, a: 1}
+  - {r: 0.48039216, g: 0.8, b: 0.16078429, a: 1}
+  - {r: 0.39999998, g: 0.49999988, b: 1, a: 1}
+  - {r: 1, g: 0.39999998, b: 0.45000008, a: 1}

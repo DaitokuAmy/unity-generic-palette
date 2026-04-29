@@ -4,6 +4,16 @@
 
 `Theme` 切り替えだけでなく、言語差し替え、イベント状態差し替え、Addressables を使った遅延ロードにも対応できる構成を目指しています。
 
+<!-- TODO: この段落の直下にヒーロー GIF を追加する。
+初見の人がスクロールせずに「Profile を切り替えると複数の共通設定がまとめて変わるライブラリ」だと理解できる短いループを目指す。
+長さの目安は 6-10 秒。
+含めたい内容:
+1. SampleScene を開いた状態を見せる
+2. Editor またはランタイム UI から Profile を切り替える
+3. 複数の UI 要素で Color と TextStyle が同時に変わる様子を見せる
+4. 可能なら言語切り替えのような非ビジュアル寄りユースケースも一瞬だけ含める
+目的は、本文を読まなくても「Profile 単位で共通設定が連動する」ことが伝わること。 -->
+
 ## Features
 
 - `PaletteAsset` に `EntryId` 集合を定義し、値の参照先を安定化できる
@@ -30,7 +40,7 @@
 | `LegacyTextStylePaletteAsset` | `LegacyTextStylePaletteValue` | `LegacyTextStylePaletteApplier` |
 | `GradientPaletteAsset` | `UnityEngine.Gradient` | なし |
 
-`Gradient` はパレット化できるが、現時点では組み込み `Applier` は提供していません。
+`Gradient` はパレット化できますが、現時点では組み込み `Applier` は提供していません。
 
 ## Installation
 
@@ -85,6 +95,17 @@ Project Settings の `Project/Unity Generic Palette` から `Palette Asset Stora
 - Profile リストを選択しただけでは preview は切り替わりません
 - Profile Popup を選択しただけでも preview は切り替わりません
 - `Default` を設定したときだけ preview 用 current profile が更新されます
+
+<!-- TODO: このセクション用に手順 GIF を追加する。
+宣伝用ではなく、ミニ手順書として見えることを優先する。
+速いカット割りは避け、次の操作を順番に撮る:
+1. Project Settings を開いて `PaletteAssetStorage` を設定する
+2. `PaletteEditorWindow` を開く
+3. Palette を追加する
+4. Entry を 1-2 個追加する
+5. Profile を 2 つ作成する
+6. 片方の Profile の値を編集する
+7. `Set Default` を押した瞬間にだけ preview が切り替わることを見せる -->
 
 ### 3. Place `PaletteEngine` in the scene
 
@@ -182,6 +203,15 @@ public sealed class PaletteBootstrap : MonoBehaviour {
 
 `GuidBaseAddressablesLoader` は `PaletteAssetBase` にシリアライズされた `ProfileId -> GUID` 対応表を使って `Addressables.LoadAssetAsync<TProfileAsset>(guid)` を呼びます。
 
+<!-- TODO: Addressables 設定用の画像を追加する。
+1 枚の注釈付きロング画像でも、複数ステップ PNG でもよい。
+最低限、次を含める:
+1. どの ProfileAsset を Addressable にする必要があるか
+2. GUID ベースでロードする前提であること
+3. `GuidBaseAddressablesLoader` を bootstrap コードのどこで設定するか
+4. 実行順が `SetLoader` -> `InitializeAsync` -> `ChangeProfileAsync` であること
+複数画像に分ける場合は `readme-addressables-step1.png` のような名前に揃える。 -->
+
 ## Loader and GUID Synchronization
 
 Editor は `PaletteProfileAsset` の作成・リネーム・削除・Project 変更時に `ProfileId -> GUID` 対応表を自動同期します。
@@ -234,6 +264,14 @@ namespace UnityGenericPalette {
 
 サンプルでは `GuidBaseAddressablesLoader` を設定して `PaletteEngine.InitializeAsync()` を呼ぶ流れを確認できます。
 
+<!-- TODO: Sample セクション用に「どこから見ればよいか」が分かる画像を追加する。
+スクリーンショットでも GIF でもよい。
+入れたい内容:
+1. `PaletteEngine` を選択した Hierarchy
+2. `Palette Asset Storage` と `Included ProfileAssets` が見える Inspector
+3. `Assets/Sample/UnityGenericPalette` が見える Project ウィンドウ
+README の手順とサンプル同梱アセットの対応が一目で分かることを目的にする。 -->
+
 ## Repository Layout
 
 ```text
@@ -260,7 +298,3 @@ docs/specs/
 ## License
 
 MIT License
-
-<!-- TODO: Add a PNG for the overall setup flow: Project Settings -> PaletteEditorWindow -> PaletteEngine -> Applier. -->
-<!-- TODO: Add a GIF that shows Profile creation, Default setting, and live preview update timing. -->
-<!-- TODO: Add a PNG or GIF for Addressables setup, especially the GUID-based loading configuration. -->
