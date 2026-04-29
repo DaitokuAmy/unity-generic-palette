@@ -18,6 +18,8 @@ namespace UnityGenericPalette {
         public int SortOrder => _sortOrder;
         /// <summary>対応する Palette アセット</summary>
         public abstract PaletteAssetBase PaletteAssetBase { get; }
+        /// <summary>内部キャッシュを無効化する</summary>
+        public abstract void InvalidateCache();
     }
 
     /// <summary>
@@ -25,13 +27,12 @@ namespace UnityGenericPalette {
     /// </summary>
     /// <typeparam name="TPaletteAsset">対応する Palette の型</typeparam>
     /// <typeparam name="TValue">保持する値の型</typeparam>
-    public abstract class PaletteProfileAssetBase<TPaletteAsset, TValue> : PaletteProfileAssetBase
+    public abstract class PaletteProfileAssetBase<TPaletteAsset, TValue> : PaletteProfileAssetBase, ISerializationCallbackReceiver
         where TPaletteAsset : PaletteAssetBase {
         [SerializeField, Tooltip("対応する Palette アセット")]
         private TPaletteAsset _paletteAsset;
-        [SerializeField, Tooltip("EntryId と値を対応付けた一覧")]
-        private List<PaletteProfileValue<TValue>> _values = new();
-        private Dictionary<string, int> _entryIndexCache;
+        [SerializeField, Tooltip("Palette の Entry 順に対応した値一覧")]
+        private List<TValue> _values = new();
         
         /// <summary>対応する Palette アセット</summary>
         public TPaletteAsset PaletteAsset => _paletteAsset;
@@ -39,6 +40,19 @@ namespace UnityGenericPalette {
         public override PaletteAssetBase PaletteAssetBase => _paletteAsset;
         /// <summary>保持している値の数</summary>
         public int ValueCount => _values.Count;
+
+        /// <inheritdoc/>
+        void ISerializationCallbackReceiver.OnBeforeSerialize() {
+        }
+
+        /// <inheritdoc/>
+        void ISerializationCallbackReceiver.OnAfterDeserialize() {
+            InvalidateCache();
+        }
+        
+        /// <inheritdoc/>
+        public override void InvalidateCache() {
+        }
 
         /// <summary>
         /// 指定した EntryId に対応する値を取得
@@ -49,6 +63,22 @@ namespace UnityGenericPalette {
         public TValue GetValueById(string entryId) {
             var entryIndex = GetEntryIndex(entryId);
             return GetValueByIndex(entryIndex);
+        }
+
+        /// <summary>
+        /// 指定した EntryId に対応する値を取得する
+        /// </summary>
+        /// <param name="entryId">取得対象の EntryId</param>
+        /// <param name="value">取得できた値</param>
+        /// <returns>取得できた場合は true</returns>
+        public bool TryGetValueById(string entryId, out TValue value) {
+            if (!TryGetEntryIndex(entryId, out var entryIndex)) {
+                value = default;
+                return false;
+            }
+
+            value = GetValueByIndex(entryIndex);
+            return true;
         }
 
         /// <summary>
@@ -66,7 +96,7 @@ namespace UnityGenericPalette {
                     $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}', ValueCount: {_values.Count}).");
             }
 
-            return _values[index].Value;
+            return _values[index];
         }
 
         /// <summary>
@@ -81,13 +111,21 @@ namespace UnityGenericPalette {
                 throw new ArgumentException("Entry ID must not be null or empty.", nameof(entryId));
             }
 
-            if (TryGetEntryIndex(entryId, out var entryIndex)) {
-                return entryIndex;
+            if (_paletteAsset == null) {
+                throw new InvalidOperationException(
+                    $"{GetType().Name} has no PaletteAsset reference " +
+                    $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}').");
             }
 
-            throw new KeyNotFoundException(
-                $"EntryId '{entryId}' was not found in {GetType().Name} " +
-                $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}', ValueCount: {_values.Count}).");
+            try {
+                return _paletteAsset.GetEntryIndex(entryId);
+            }
+            catch (KeyNotFoundException exception) {
+                throw new KeyNotFoundException(
+                    $"EntryId '{entryId}' was not found in {GetType().Name} " +
+                    $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}', ValueCount: {_values.Count}).",
+                    exception);
+            }
         }
 
         /// <summary>
@@ -97,39 +135,19 @@ namespace UnityGenericPalette {
         /// <param name="entryIndex">取得できた index</param>
         /// <returns>取得できた場合は true</returns>
         public bool TryGetEntryIndex(string entryId, out int entryIndex) {
-            if (string.IsNullOrEmpty(entryId)) {
+            if (_paletteAsset == null) {
                 entryIndex = 0;
                 return false;
             }
 
-            EnsureEntryIndexCache();
-            return _entryIndexCache.TryGetValue(entryId, out entryIndex);
+            return _paletteAsset.TryGetEntryIndex(entryId, out entryIndex);
         }
 
         /// <summary>
-        /// EntryId から index を引くキャッシュを初期化する
+        /// Inspector 更新時に内部キャッシュを無効化する
         /// </summary>
-        /// <exception cref="InvalidOperationException">重複した EntryId が存在する場合</exception>
-        private void EnsureEntryIndexCache() {
-            if (_entryIndexCache != null) {
-                return;
-            }
-
-            _entryIndexCache = new Dictionary<string, int>(_values.Count);
-            for (var i = 0; i < _values.Count; i++) {
-                var profileValue = _values[i];
-                if (profileValue == null || string.IsNullOrEmpty(profileValue.EntryId)) {
-                    continue;
-                }
-
-                if (_entryIndexCache.ContainsKey(profileValue.EntryId)) {
-                    throw new InvalidOperationException(
-                        $"Duplicate EntryId '{profileValue.EntryId}' was found in {GetType().Name} " +
-                        $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}').");
-                }
-
-                _entryIndexCache.Add(profileValue.EntryId, i);
-            }
+        private void OnValidate() {
+            InvalidateCache();
         }
     }
 }

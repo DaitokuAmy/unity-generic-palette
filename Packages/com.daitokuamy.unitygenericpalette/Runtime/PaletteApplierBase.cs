@@ -85,7 +85,10 @@ namespace UnityGenericPalette {
                 return;
             }
 
-            var value = paletteProfileAsset.GetValueById(_entryId);
+            if (!paletteProfileAsset.TryGetValueById(_entryId, out var value)) {
+                return;
+            }
+
             ApplyValue(value);
         }
     }

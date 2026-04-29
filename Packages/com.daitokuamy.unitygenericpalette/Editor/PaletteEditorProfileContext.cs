@@ -20,6 +20,7 @@ namespace UnityGenericPalette.Editor {
         /// </summary>
         static PaletteEditorProfileContext() {
             PaletteProfileContextResolver.SetEditorContextProvider(GetCurrentContext);
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
         /// <inheritdoc/>
@@ -42,6 +43,15 @@ namespace UnityGenericPalette.Editor {
         /// </summary>
         /// <param name="profileAsset">設定する ProfileAsset</param>
         internal void SetCurrentProfile(PaletteProfileAssetBase profileAsset) {
+            SetCurrentProfile(profileAsset, true);
+        }
+
+        /// <summary>
+        /// Preview 中の ProfileAsset を設定する
+        /// </summary>
+        /// <param name="profileAsset">設定する ProfileAsset</param>
+        /// <param name="notifyChangedProfile">変更通知を発火するか</param>
+        internal void SetCurrentProfile(PaletteProfileAssetBase profileAsset, bool notifyChangedProfile) {
             if (profileAsset == null) {
                 throw new ArgumentNullException(nameof(profileAsset));
             }
@@ -52,7 +62,9 @@ namespace UnityGenericPalette.Editor {
             }
 
             _currentProfileAssets[paletteAsset] = profileAsset;
-            RaiseChangedProfile(profileAsset);
+            if (notifyChangedProfile) {
+                RaiseChangedProfile(profileAsset);
+            }
         }
 
         /// <summary>
@@ -190,6 +202,13 @@ namespace UnityGenericPalette.Editor {
         }
 
         /// <summary>
+        /// Undo / Redo 後に current profile の再反映を通知する
+        /// </summary>
+        private static void OnUndoRedoPerformed() {
+            InstanceValue.NotifyCurrentProfilesChanged();
+        }
+
+        /// <summary>
         /// 指定した ProfileAsset の変更通知を発火する
         /// </summary>
         /// <param name="profileAsset">通知対象の ProfileAsset</param>
@@ -201,6 +220,24 @@ namespace UnityGenericPalette.Editor {
 
             for (var i = 0; i < changedProfileHandlers.Count; i++) {
                 changedProfileHandlers[i].DynamicInvoke(profileAsset);
+            }
+        }
+
+        /// <summary>
+        /// 現在 preview 中の ProfileAsset すべての変更通知を再発火する
+        /// </summary>
+        private void NotifyCurrentProfilesChanged() {
+            if (_currentProfileAssets.Count == 0) {
+                return;
+            }
+
+            foreach (var currentProfileAsset in _currentProfileAssets.Values) {
+                if (currentProfileAsset == null) {
+                    continue;
+                }
+
+                currentProfileAsset.InvalidateCache();
+                RaiseChangedProfile(currentProfileAsset);
             }
         }
 

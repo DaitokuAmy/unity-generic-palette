@@ -103,13 +103,15 @@ namespace UnityGenericPalette.Editor {
 
             serializedObject.Update();
             var entryProperty = entriesProperty.GetArrayElementAtIndex(_selectedEntryIndex);
-            EditorGUILayout.PropertyField(entryProperty.FindPropertyRelative("_entryId"), new GUIContent("Entry Id"));
+            var entryIdProperty = entryProperty.FindPropertyRelative("_entryId");
+            EditorGUILayout.PropertyField(entryIdProperty, new GUIContent("Entry Id"));
             EditorGUILayout.PropertyField(entryProperty.FindPropertyRelative("_displayName"), new GUIContent("Display Name"));
             EditorGUILayout.PropertyField(entryProperty.FindPropertyRelative("_description"), new GUIContent("Description"));
             if (!serializedObject.ApplyModifiedProperties()) {
                 return;
             }
 
+            _selectedPaletteAsset.InvalidateEntryIndexCache();
             EditorUtility.SetDirty(_selectedPaletteAsset);
             SynchronizeProfileValues(_selectedPaletteAsset);
         }
@@ -127,12 +129,12 @@ namespace UnityGenericPalette.Editor {
                 return;
             }
 
-            var profileValueProperty = valuesProperty.GetArrayElementAtIndex(_selectedEntryIndex);
-            var valueProperty = profileValueProperty.FindPropertyRelative("_value");
+            var valueProperty = valuesProperty.GetArrayElementAtIndex(_selectedEntryIndex);
 
             serializedObject.Update();
             EditorGUILayout.PropertyField(valueProperty, true);
             if (serializedObject.ApplyModifiedProperties()) {
+                _selectedProfileAsset.InvalidateCache();
                 EditorUtility.SetDirty(_selectedProfileAsset);
                 PaletteEditorProfileContext.Instance.NotifyProfileChanged(_selectedProfileAsset);
             }
@@ -201,28 +203,25 @@ namespace UnityGenericPalette.Editor {
                 return;
             }
 
-            var entryId = _selectedPaletteAsset.Entries[_selectedEntryIndex].EntryId;
             var sourceSerializedObject = new SerializedObject(sourceProfileAsset);
             var sourceValuesProperty = sourceSerializedObject.FindProperty("_values");
-            var sourceValueIndex = FindProfileValueIndex(sourceValuesProperty, entryId, 0);
-            if (!IsValidArrayIndex(sourceValuesProperty, sourceValueIndex)) {
-                EditorUtility.DisplayDialog("Palette Editor", $"Profile '{GetProfileLabel(sourceProfileAsset)}' does not contain EntryId '{entryId}'.", "OK");
+            if (!IsValidArrayIndex(sourceValuesProperty, _selectedEntryIndex)) {
+                EditorUtility.DisplayDialog("Palette Editor", $"Profile '{GetProfileLabel(sourceProfileAsset)}' does not contain the selected entry index.", "OK");
                 return;
             }
 
             var targetSerializedObject = new SerializedObject(_selectedProfileAsset);
             var targetValuesProperty = targetSerializedObject.FindProperty("_values");
-            var targetValueIndex = FindProfileValueIndex(targetValuesProperty, entryId, 0);
-            if (!IsValidArrayIndex(targetValuesProperty, targetValueIndex)) {
-                EditorUtility.DisplayDialog("Palette Editor", $"Profile '{GetProfileLabel(_selectedProfileAsset)}' does not contain EntryId '{entryId}'.", "OK");
+            if (!IsValidArrayIndex(targetValuesProperty, _selectedEntryIndex)) {
+                EditorUtility.DisplayDialog("Palette Editor", $"Profile '{GetProfileLabel(_selectedProfileAsset)}' does not contain the selected entry index.", "OK");
                 return;
             }
 
             sourceSerializedObject.Update();
             targetSerializedObject.Update();
 
-            var sourceValueProperty = sourceValuesProperty.GetArrayElementAtIndex(sourceValueIndex).FindPropertyRelative("_value");
-            var targetValueProperty = targetValuesProperty.GetArrayElementAtIndex(targetValueIndex).FindPropertyRelative("_value");
+            var sourceValueProperty = sourceValuesProperty.GetArrayElementAtIndex(_selectedEntryIndex);
+            var targetValueProperty = targetValuesProperty.GetArrayElementAtIndex(_selectedEntryIndex);
             CopySerializedPropertyValue(sourceValueProperty, targetValueProperty);
 
             targetSerializedObject.ApplyModifiedPropertiesWithoutUndo();
@@ -410,10 +409,10 @@ namespace UnityGenericPalette.Editor {
             AssetDatabase.SaveAssets();
 
             _selectedPaletteAsset = paletteAsset;
-            _selectedProfileAsset = null;
             _selectedEntryIndex = -1;
             InvalidatePaletteEntryList();
             InvalidateProfileAssetList();
+            _selectedProfileAsset = CreateProfileAsset(paletteAsset, "Default", true);
             RebuildWindow();
         }
 
@@ -530,6 +529,7 @@ namespace UnityGenericPalette.Editor {
             entryProperty.FindPropertyRelative("_description").stringValue = string.Empty;
 
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            _selectedPaletteAsset.InvalidateEntryIndexCache();
             EditorUtility.SetDirty(_selectedPaletteAsset);
             SynchronizeProfileValues(_selectedPaletteAsset);
 
@@ -554,6 +554,7 @@ namespace UnityGenericPalette.Editor {
 
             entriesProperty.DeleteArrayElementAtIndex(_selectedEntryIndex);
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            _selectedPaletteAsset.InvalidateEntryIndexCache();
             EditorUtility.SetDirty(_selectedPaletteAsset);
             SynchronizeProfileValues(_selectedPaletteAsset);
 
@@ -572,7 +573,30 @@ namespace UnityGenericPalette.Editor {
                 var serializedObject = new SerializedObject(profileAssets[i]);
                 SynchronizeProfileValuesArray(serializedObject.FindProperty("_values"), paletteAsset.Entries);
                 serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                profileAssets[i].InvalidateCache();
                 EditorUtility.SetDirty(profileAssets[i]);
+            }
+        }
+
+        /// <summary>
+        /// Palette と ProfileValue 配列の不整合があれば同期する
+        /// </summary>
+        /// <param name="paletteAsset">確認対象の PaletteAsset</param>
+        private void EnsureProfileValuesSynchronized(PaletteAssetBase paletteAsset) {
+            if (paletteAsset == null) {
+                return;
+            }
+
+            var profileAssets = GetProfileAssets(paletteAsset);
+            for (var i = 0; i < profileAssets.Count; i++) {
+                var serializedObject = new SerializedObject(profileAssets[i]);
+                var valuesProperty = serializedObject.FindProperty("_values");
+                if (IsProfileValuesArraySynchronized(valuesProperty, paletteAsset.Entries)) {
+                    continue;
+                }
+
+                SynchronizeProfileValues(paletteAsset);
+                return;
             }
         }
 
@@ -582,18 +606,10 @@ namespace UnityGenericPalette.Editor {
         /// <param name="valuesProperty">同期対象の配列</param>
         /// <param name="entries">同期元 Entry 一覧</param>
         private void SynchronizeProfileValuesArray(SerializedProperty valuesProperty, IReadOnlyList<PaletteEntry> entries) {
-            for (var i = 0; i < entries.Count; i++) {
-                var entryId = entries[i].EntryId;
-                var currentIndex = FindProfileValueIndex(valuesProperty, entryId, i);
-                if (currentIndex < 0) {
-                    valuesProperty.InsertArrayElementAtIndex(i);
-                    ResetProfileValue(valuesProperty.GetArrayElementAtIndex(i));
-                }
-                else if (currentIndex != i) {
-                    valuesProperty.MoveArrayElement(currentIndex, i);
-                }
-
-                valuesProperty.GetArrayElementAtIndex(i).FindPropertyRelative("_entryId").stringValue = entryId;
+            while (valuesProperty.arraySize < entries.Count) {
+                var insertIndex = valuesProperty.arraySize;
+                valuesProperty.InsertArrayElementAtIndex(insertIndex);
+                ResetProfileValue(valuesProperty.GetArrayElementAtIndex(insertIndex));
             }
 
             while (valuesProperty.arraySize > entries.Count) {
@@ -602,35 +618,255 @@ namespace UnityGenericPalette.Editor {
         }
 
         /// <summary>
+        /// ProfileValue 配列が Entry 一覧と一致しているか判定する
+        /// </summary>
+        /// <param name="valuesProperty">判定対象の配列</param>
+        /// <param name="entries">比較元 Entry 一覧</param>
+        /// <returns>一致している場合は true</returns>
+        private bool IsProfileValuesArraySynchronized(SerializedProperty valuesProperty, IReadOnlyList<PaletteEntry> entries) {
+            return valuesProperty != null && entries != null && valuesProperty.arraySize == entries.Count;
+        }
+
+        /// <summary>
+        /// Palette Entry の並び替えに合わせて ProfileValue 配列も並び替える
+        /// </summary>
+        /// <param name="paletteAsset">対象の PaletteAsset</param>
+        /// <param name="previousEntryIds">並び替え前の EntryId 一覧</param>
+        /// <param name="nextEntryIds">並び替え後の EntryId 一覧</param>
+        private void ReorderProfileValues(PaletteAssetBase paletteAsset, IReadOnlyList<string> previousEntryIds, IReadOnlyList<string> nextEntryIds) {
+            if (paletteAsset == null ||
+                previousEntryIds == null ||
+                nextEntryIds == null ||
+                previousEntryIds.Count != nextEntryIds.Count) {
+                SynchronizeProfileValues(paletteAsset);
+                return;
+            }
+
+            var previousIndexByEntryId = new Dictionary<string, int>(previousEntryIds.Count);
+            for (var i = 0; i < previousEntryIds.Count; i++) {
+                if (string.IsNullOrEmpty(previousEntryIds[i]) || previousIndexByEntryId.ContainsKey(previousEntryIds[i])) {
+                    SynchronizeProfileValues(paletteAsset);
+                    return;
+                }
+
+                previousIndexByEntryId.Add(previousEntryIds[i], i);
+            }
+
+            var reorderedIndices = new int[nextEntryIds.Count];
+            for (var i = 0; i < nextEntryIds.Count; i++) {
+                if (!previousIndexByEntryId.TryGetValue(nextEntryIds[i], out reorderedIndices[i])) {
+                    SynchronizeProfileValues(paletteAsset);
+                    return;
+                }
+            }
+
+            var profileAssets = GetProfileAssets(paletteAsset);
+            for (var i = 0; i < profileAssets.Count; i++) {
+                var serializedObject = new SerializedObject(profileAssets[i]);
+                var valuesProperty = serializedObject.FindProperty("_values");
+                if (!IsValidArrayIndex(valuesProperty, previousEntryIds.Count - 1)) {
+                    SynchronizeProfileValues(paletteAsset);
+                    return;
+                }
+
+                ReorderProfileValuesArray(valuesProperty, reorderedIndices);
+                serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                profileAssets[i].InvalidateCache();
+                EditorUtility.SetDirty(profileAssets[i]);
+            }
+        }
+
+        /// <summary>
+        /// ProfileValue 配列を指定した index 順へ並び替える
+        /// </summary>
+        /// <param name="valuesProperty">並び替え対象の配列</param>
+        /// <param name="sourceIndicesByDestinationIndex">各 destination index に対応する source index</param>
+        private void ReorderProfileValuesArray(SerializedProperty valuesProperty, IReadOnlyList<int> sourceIndicesByDestinationIndex) {
+            var originalSize = valuesProperty.arraySize;
+            for (var i = 0; i < originalSize; i++) {
+                valuesProperty.InsertArrayElementAtIndex(valuesProperty.arraySize);
+            }
+
+            var backupStartIndex = originalSize;
+            for (var i = 0; i < originalSize; i++) {
+                var sourceProperty = valuesProperty.GetArrayElementAtIndex(i);
+                var backupProperty = valuesProperty.GetArrayElementAtIndex(backupStartIndex + i);
+                CopySerializedPropertyValue(sourceProperty, backupProperty);
+            }
+
+            for (var i = 0; i < sourceIndicesByDestinationIndex.Count; i++) {
+                var sourceProperty = valuesProperty.GetArrayElementAtIndex(backupStartIndex + sourceIndicesByDestinationIndex[i]);
+                var destinationProperty = valuesProperty.GetArrayElementAtIndex(i);
+                CopySerializedPropertyValue(sourceProperty, destinationProperty);
+            }
+
+            while (valuesProperty.arraySize > originalSize) {
+                valuesProperty.DeleteArrayElementAtIndex(valuesProperty.arraySize - 1);
+            }
+        }
+
+        /// <summary>
+        /// Entry 一覧から EntryId の配列を取得する
+        /// </summary>
+        /// <param name="entries">対象 Entry 一覧</param>
+        /// <returns>EntryId の一覧</returns>
+        private List<string> GetPaletteEntryIds(IReadOnlyList<PaletteEntry> entries) {
+            var entryIds = new List<string>(entries?.Count ?? 0);
+            if (entries == null) {
+                return entryIds;
+            }
+
+            for (var i = 0; i < entries.Count; i++) {
+                entryIds.Add(entries[i]?.EntryId ?? string.Empty);
+            }
+
+            return entryIds;
+        }
+
+        /// <summary>
+        /// SerializedProperty の Entry 配列から EntryId の配列を取得する
+        /// </summary>
+        /// <param name="entriesProperty">対象 Entry 配列</param>
+        /// <returns>EntryId の一覧</returns>
+        private List<string> GetPaletteEntryIds(SerializedProperty entriesProperty) {
+            var entryIds = new List<string>(entriesProperty?.arraySize ?? 0);
+            if (entriesProperty == null) {
+                return entryIds;
+            }
+
+            for (var i = 0; i < entriesProperty.arraySize; i++) {
+                var entryProperty = entriesProperty.GetArrayElementAtIndex(i);
+                var entryIdProperty = entryProperty.FindPropertyRelative("_entryId");
+                entryIds.Add(entryIdProperty != null ? entryIdProperty.stringValue : string.Empty);
+            }
+
+            return entryIds;
+        }
+
+        /// <summary>
         /// ProfileValue 要素を既定値へ初期化する
         /// </summary>
-        /// <param name="profileValueProperty">初期化対象の要素</param>
-        private void ResetProfileValue(SerializedProperty profileValueProperty) {
-            profileValueProperty.FindPropertyRelative("_entryId").stringValue = string.Empty;
+        /// <param name="valueProperty">初期化対象の要素</param>
+        private void ResetProfileValue(SerializedProperty valueProperty) {
+            ResetSerializedPropertyValue(valueProperty);
+        }
 
-            var valueProperty = profileValueProperty.FindPropertyRelative("_value");
-            switch (valueProperty.propertyType) {
+        /// <summary>
+        /// SerializedProperty を既定値へ初期化する
+        /// </summary>
+        /// <param name="property">初期化対象</param>
+        private void ResetSerializedPropertyValue(SerializedProperty property) {
+            if (property == null) {
+                return;
+            }
+
+            if (property.isArray && property.propertyType != SerializedPropertyType.String) {
+                property.arraySize = 0;
+                return;
+            }
+
+            switch (property.propertyType) {
                 case SerializedPropertyType.Integer:
-                    valueProperty.intValue = 0;
-                    break;
+                    property.intValue = 0;
+                    return;
                 case SerializedPropertyType.Boolean:
-                    valueProperty.boolValue = false;
-                    break;
+                    property.boolValue = false;
+                    return;
                 case SerializedPropertyType.Float:
-                    valueProperty.floatValue = 0f;
-                    break;
+                    property.floatValue = 0f;
+                    return;
                 case SerializedPropertyType.String:
-                    valueProperty.stringValue = string.Empty;
-                    break;
+                    property.stringValue = string.Empty;
+                    return;
                 case SerializedPropertyType.Color:
-                    valueProperty.colorValue = default;
-                    break;
+                    property.colorValue = default;
+                    return;
                 case SerializedPropertyType.ObjectReference:
-                    valueProperty.objectReferenceValue = null;
-                    break;
+                    property.objectReferenceValue = null;
+                    return;
+                case SerializedPropertyType.LayerMask:
+                    property.intValue = 0;
+                    return;
                 case SerializedPropertyType.Enum:
-                    valueProperty.enumValueIndex = 0;
-                    break;
+                    property.enumValueIndex = 0;
+                    return;
+                case SerializedPropertyType.Vector2:
+                    property.vector2Value = default;
+                    return;
+                case SerializedPropertyType.Vector3:
+                    property.vector3Value = default;
+                    return;
+                case SerializedPropertyType.Vector4:
+                    property.vector4Value = default;
+                    return;
+                case SerializedPropertyType.Rect:
+                    property.rectValue = default;
+                    return;
+                case SerializedPropertyType.ArraySize:
+                    property.intValue = 0;
+                    return;
+                case SerializedPropertyType.Character:
+                    property.intValue = 0;
+                    return;
+                case SerializedPropertyType.AnimationCurve:
+                    property.animationCurveValue = new AnimationCurve();
+                    return;
+                case SerializedPropertyType.Bounds:
+                    property.boundsValue = default;
+                    return;
+                case SerializedPropertyType.Quaternion:
+                    property.quaternionValue = default;
+                    return;
+                case SerializedPropertyType.ExposedReference:
+                    property.exposedReferenceValue = null;
+                    return;
+                case SerializedPropertyType.FixedBufferSize:
+                    property.intValue = 0;
+                    return;
+                case SerializedPropertyType.Vector2Int:
+                    property.vector2IntValue = default;
+                    return;
+                case SerializedPropertyType.Vector3Int:
+                    property.vector3IntValue = default;
+                    return;
+                case SerializedPropertyType.RectInt:
+                    property.rectIntValue = default;
+                    return;
+                case SerializedPropertyType.BoundsInt:
+                    property.boundsIntValue = default;
+                    return;
+                case SerializedPropertyType.ManagedReference:
+                    property.managedReferenceValue = null;
+                    return;
+                case SerializedPropertyType.Hash128:
+                    property.hash128Value = default;
+                    return;
+                case SerializedPropertyType.Generic:
+                    ResetGenericPropertyValue(property);
+                    return;
+                default:
+                    return;
+            }
+        }
+
+        /// <summary>
+        /// Generic な SerializedProperty を再帰的に既定値へ初期化する
+        /// </summary>
+        /// <param name="property">初期化対象</param>
+        private void ResetGenericPropertyValue(SerializedProperty property) {
+            var iterator = property.Copy();
+            var endProperty = iterator.GetEndProperty();
+            var enterChildren = true;
+            while (iterator.NextVisible(enterChildren) && !SerializedProperty.EqualContents(iterator, endProperty)) {
+                enterChildren = false;
+
+                var relativePropertyPath = iterator.propertyPath.Substring(property.propertyPath.Length + 1);
+                var childProperty = property.FindPropertyRelative(relativePropertyPath);
+                if (childProperty == null) {
+                    continue;
+                }
+
+                ResetSerializedPropertyValue(childProperty);
             }
         }
 
@@ -751,9 +987,12 @@ namespace UnityGenericPalette.Editor {
                 return;
             }
 
+            var previousEntryIds = GetPaletteEntryIds(_selectedPaletteAsset.Entries);
+            var nextEntryIds = GetPaletteEntryIds(list.serializedProperty);
             list.serializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            _selectedPaletteAsset.InvalidateEntryIndexCache();
             EditorUtility.SetDirty(_selectedPaletteAsset);
-            SynchronizeProfileValues(_selectedPaletteAsset);
+            ReorderProfileValues(_selectedPaletteAsset, previousEntryIds, nextEntryIds);
             _selectedEntryIndex = list.index;
             Repaint();
         }
@@ -781,6 +1020,7 @@ namespace UnityGenericPalette.Editor {
             duplicatedEntryProperty.FindPropertyRelative("_displayName").stringValue = sourceDisplayName;
             duplicatedEntryProperty.FindPropertyRelative("_description").stringValue = sourceDescription;
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            _selectedPaletteAsset.InvalidateEntryIndexCache();
             EditorUtility.SetDirty(_selectedPaletteAsset);
 
             var profileAssets = GetProfileAssets(_selectedPaletteAsset);
@@ -788,7 +1028,6 @@ namespace UnityGenericPalette.Editor {
                 var profileSerializedObject = new SerializedObject(profileAssets[i]);
                 var valuesProperty = profileSerializedObject.FindProperty("_values");
                 valuesProperty.InsertArrayElementAtIndex(insertIndex);
-                valuesProperty.GetArrayElementAtIndex(insertIndex).FindPropertyRelative("_entryId").stringValue = duplicatedEntryId;
                 profileSerializedObject.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(profileAssets[i]);
             }

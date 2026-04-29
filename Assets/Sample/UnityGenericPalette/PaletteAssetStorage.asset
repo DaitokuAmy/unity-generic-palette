@@ -29,6 +29,26 @@ MonoBehaviour:
     _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC01"
     _description: 
   _defaultProfileId: Default
+--- !u!114 &-5720060537414394017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1df4cfb1300f49bf8617353d3297b450, type: 3}
+  m_Name: TextStylePaletteAsset
+  m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TextStylePaletteAsset
+  _entries:
+  - _entryId: Content01
+    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C801"
+    _description: 
+  - _entryId: Content02
+    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C802"
+    _description: 
+  _defaultProfileId: Japanese
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -43,3 +63,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.PaletteAssetStorage
   _paletteAssets:
   - {fileID: -7781068147370238263}
+  - {fileID: -5720060537414394017}

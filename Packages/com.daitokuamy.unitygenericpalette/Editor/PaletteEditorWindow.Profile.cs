@@ -37,22 +37,32 @@ namespace UnityGenericPalette.Editor {
         /// </summary>
         /// <param name="paletteAsset">対象の PaletteAsset</param>
         private void CreateProfileAsset(PaletteAssetBase paletteAsset) {
+            CreateProfileAsset(paletteAsset, GenerateUniqueProfileId(paletteAsset), false);
+        }
+
+        /// <summary>
+        /// ProfileAsset を生成する
+        /// </summary>
+        /// <param name="paletteAsset">対象の PaletteAsset</param>
+        /// <param name="profileId">生成する ProfileId</param>
+        /// <param name="setAsDefaultProfile">生成後に既定 Profile として登録するか</param>
+        /// <returns>生成した ProfileAsset。生成できなかった場合は null</returns>
+        private PaletteProfileAssetBase CreateProfileAsset(PaletteAssetBase paletteAsset, string profileId, bool setAsDefaultProfile) {
             var profileAssetType = GetProfileAssetType(paletteAsset);
             if (profileAssetType == null) {
                 EditorUtility.DisplayDialog("Palette Editor", $"Profile asset type is not defined on {paletteAsset.GetType().Name}.", "OK");
-                return;
+                return null;
             }
 
             var profileFolderPath = EnsureProfileAssetFolderPath();
             if (string.IsNullOrEmpty(profileFolderPath)) {
                 EditorUtility.DisplayDialog("Palette Editor", "Storage asset must be saved before adding a profile.", "OK");
-                return;
+                return null;
             }
 
-            var profileId = GenerateUniqueProfileId(paletteAsset);
             var profileAsset = CreateInstance(profileAssetType) as PaletteProfileAssetBase;
             if (profileAsset == null) {
-                return;
+                return null;
             }
 
             profileAsset.name = BuildProfileAssetAssetName(profileAssetType, profileId);
@@ -67,6 +77,10 @@ namespace UnityGenericPalette.Editor {
             var assetPath = AssetDatabase.GenerateUniqueAssetPath($"{profileFolderPath}/{profileAsset.name}.asset");
             AssetDatabase.CreateAsset(profileAsset, assetPath);
             EditorUtility.SetDirty(profileAsset);
+            if (setAsDefaultProfile) {
+                SetDefaultProfileId(paletteAsset, profileId);
+            }
+
             AssetDatabase.SaveAssets();
 
             _selectedProfileAsset = profileAsset;
@@ -74,6 +88,7 @@ namespace UnityGenericPalette.Editor {
             SetCurrentEditorProfile(profileAsset);
             InvalidateProfileAssetList();
             RebuildWindow();
+            return profileAsset;
         }
 
         /// <summary>

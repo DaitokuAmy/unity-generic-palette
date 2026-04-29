@@ -22,8 +22,8 @@ namespace UnityGenericPalette {
         private PaletteAssetStorage _paletteAssetStorage;
         [SerializeField, Tooltip("シーン遷移時に GameObject を破棄しないか")]
         private bool _dontDestroyOnLoad;
-        [SerializeField, Tooltip("Loader を使わずに優先利用する Builtin ProfileAsset 一覧")]
-        private List<PaletteProfileAssetBase> _builtinProfileAssets = new();
+        [SerializeField, Tooltip("Loader を使わずに優先利用する Included ProfileAsset 一覧")]
+        private List<PaletteProfileAssetBase> _includedProfileAssets = new();
 
         private readonly Dictionary<PaletteAssetBase, string> _currentProfileIds = new();
         private readonly Dictionary<PaletteAssetBase, PaletteProfileAssetBase> _loadedProfileAssets = new();
@@ -231,7 +231,7 @@ namespace UnityGenericPalette {
             BeginProfileChangeRequest<TProfileAsset>();
             try {
                 var isLoaderOwned = false;
-                if (!TryGetBuiltinProfileAsset<TProfileAsset>(profileId, out var nextProfileAsset)) {
+                if (!TryGetIncludedProfileAsset<TProfileAsset>(profileId, out var nextProfileAsset)) {
                     if (_paletteProfileLoader == null) {
                         throw new InvalidOperationException("PaletteProfileLoader is not assigned.");
                     }
@@ -411,17 +411,17 @@ namespace UnityGenericPalette {
         }
 
         /// <summary>
-        /// Builtin ProfileAsset 一覧から一致するアセットを取得
+        /// Included ProfileAsset 一覧から一致するアセットを取得
         /// </summary>
         /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
         /// <param name="profileId">対象の Profile ID</param>
         /// <param name="profileAsset">取得できた ProfileAsset</param>
         /// <returns>取得できた場合は true</returns>
-        private bool TryGetBuiltinProfileAsset<TProfileAsset>(string profileId, out TProfileAsset profileAsset)
+        private bool TryGetIncludedProfileAsset<TProfileAsset>(string profileId, out TProfileAsset profileAsset)
             where TProfileAsset : PaletteProfileAssetBase {
-            for (var i = 0; i < _builtinProfileAssets.Count; i++) {
-                var builtinProfileAsset = _builtinProfileAssets[i];
-                if (builtinProfileAsset is not TProfileAsset typedProfileAsset) {
+            for (var i = 0; i < _includedProfileAssets.Count; i++) {
+                var includedProfileAsset = _includedProfileAssets[i];
+                if (includedProfileAsset is not TProfileAsset typedProfileAsset) {
                     continue;
                 }
 

@@ -50,6 +50,7 @@ namespace UnityGenericPalette.Editor {
 
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar)) {
                     DrawProfilePopupGui();
+                    DrawSelectedProfileDefaultGui();
                     GUILayout.FlexibleSpace();
                 }
             }
@@ -129,9 +130,24 @@ namespace UnityGenericPalette.Editor {
             }
 
             _selectedProfileAsset = profileAssets[selectedIndex];
-            SetCurrentEditorProfile(_selectedProfileAsset);
+            SetCurrentEditorProfile(_selectedProfileAsset, false);
             RebuildWindow();
             GUIUtility.ExitGUI();
+        }
+
+        /// <summary>
+        /// 選択中 Profile の既定状態を表示し、必要に応じて既定へ設定する
+        /// </summary>
+        private void DrawSelectedProfileDefaultGui() {
+            var isDefaultProfile = _selectedPaletteAsset != null &&
+                _selectedProfileAsset != null &&
+                _selectedPaletteAsset.DefaultProfileId == _selectedProfileAsset.ProfileId;
+
+            using (new EditorGUI.DisabledScope(_selectedPaletteAsset == null || _selectedProfileAsset == null || isDefaultProfile)) {
+                if (GUILayout.Button(isDefaultProfile ? "Default" : "Set Default", EditorStyles.toolbarButton, GUILayout.Width(HeaderButtonWidth))) {
+                    ToggleDefaultProfile(_selectedProfileAsset, false);
+                }
+            }
         }
     }
 }

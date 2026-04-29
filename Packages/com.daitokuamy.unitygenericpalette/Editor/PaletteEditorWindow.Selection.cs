@@ -33,6 +33,7 @@ namespace UnityGenericPalette.Editor {
                 _selectedEntryIndex = -1;
             }
 
+            EnsureProfileValuesSynchronized(_selectedPaletteAsset);
             var profileAssets = GetProfileAssets(_selectedPaletteAsset);
             if (profileAssets.Count == 0) {
                 _selectedProfileAsset = null;
@@ -247,24 +248,6 @@ namespace UnityGenericPalette.Editor {
         }
 
         /// <summary>
-        /// ProfileValue 配列の中から一致する EntryId の位置を検索する
-        /// </summary>
-        /// <param name="valuesProperty">検索対象の配列</param>
-        /// <param name="entryId">検索する EntryId</param>
-        /// <param name="startIndex">検索開始 index</param>
-        /// <returns>見つかった index。見つからない場合は -1</returns>
-        private int FindProfileValueIndex(SerializedProperty valuesProperty, string entryId, int startIndex) {
-            for (var i = startIndex; i < valuesProperty.arraySize; i++) {
-                var currentEntryId = valuesProperty.GetArrayElementAtIndex(i).FindPropertyRelative("_entryId").stringValue;
-                if (currentEntryId == entryId) {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        /// <summary>
         /// 配列 index の妥当性を判定する
         /// </summary>
         /// <param name="arrayProperty">対象の配列 property</param>
@@ -338,11 +321,20 @@ namespace UnityGenericPalette.Editor {
         /// </summary>
         /// <param name="profileAsset">設定する ProfileAsset</param>
         private void SetCurrentEditorProfile(PaletteProfileAssetBase profileAsset) {
+            SetCurrentEditorProfile(profileAsset, true);
+        }
+
+        /// <summary>
+        /// Edit Mode 用 current profile を更新する
+        /// </summary>
+        /// <param name="profileAsset">設定する ProfileAsset</param>
+        /// <param name="notifyChangedProfile">変更通知を発火するか</param>
+        private void SetCurrentEditorProfile(PaletteProfileAssetBase profileAsset, bool notifyChangedProfile) {
             if (profileAsset == null) {
                 return;
             }
 
-            PaletteEditorProfileContext.Instance.SetCurrentProfile(profileAsset);
+            PaletteEditorProfileContext.Instance.SetCurrentProfile(profileAsset, notifyChangedProfile);
         }
     }
 }

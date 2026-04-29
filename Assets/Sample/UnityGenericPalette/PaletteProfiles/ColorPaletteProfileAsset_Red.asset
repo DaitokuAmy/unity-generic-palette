@@ -16,13 +16,8 @@ MonoBehaviour:
   _sortOrder: 2
   _paletteAsset: {fileID: -7781068147370238263, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
   _values:
-  - _entryId: Base01
-    _value: {r: 0.6, g: 0.29803926, b: 0.29803926, a: 1}
-  - _entryId: Main01
-    _value: {r: 0.29803923, g: 0.14901961, b: 0.14901961, a: 1}
-  - _entryId: Positive01
-    _value: {r: 0.5019608, g: 0.5019608, b: 1, a: 1}
-  - _entryId: Negative01
-    _value: {r: 1, g: 0.5, b: 0.5, a: 1}
-  - _entryId: Accent01
-    _value: {r: 1, g: 0.8847059, b: 0.3, a: 1}
+  - {r: 0.6, g: 0.29803926, b: 0.29803926, a: 1}
+  - {r: 0.3, g: 0.14901963, b: 0.14901963, a: 1}
+  - {r: 0.5019608, g: 0.5019608, b: 1, a: 1}
+  - {r: 1, g: 0.5, b: 0.5, a: 1}
+  - {r: 1, g: 0.8847059, b: 0.3, a: 1}
