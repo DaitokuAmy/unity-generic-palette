@@ -29,5 +29,14 @@ namespace UnityGenericPalette {
         /// <returns>取得できた場合は true</returns>
         bool TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset)
             where TProfileAsset : PaletteProfileAssetBase;
+
+        /// <summary>
+        /// 指定した ProfileAsset 型に対応する現在の ProfileId を取得する
+        /// </summary>
+        /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
+        /// <param name="profileId">取得できた ProfileId</param>
+        /// <returns>取得できた場合は true</returns>
+        bool TryGetCurrentProfileId<TProfileAsset>(out string profileId)
+            where TProfileAsset : PaletteProfileAssetBase;
     }
 }

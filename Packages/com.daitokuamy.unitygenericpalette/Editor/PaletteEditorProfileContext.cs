@@ -38,6 +38,11 @@ namespace UnityGenericPalette.Editor {
             return TryGetCurrentProfileAsset(out profileAsset);
         }
 
+        /// <inheritdoc/>
+        bool IPaletteProfileContext.TryGetCurrentProfileId<TProfileAsset>(out string profileId) {
+            return TryGetCurrentProfileId<TProfileAsset>(out profileId);
+        }
+
         /// <summary>
         /// Preview 中の ProfileAsset を設定する
         /// </summary>
@@ -190,6 +195,23 @@ namespace UnityGenericPalette.Editor {
             }
 
             profileAsset = null;
+            return false;
+        }
+
+        /// <summary>
+        /// 指定した ProfileAsset 型に対応する現在の ProfileId を取得する
+        /// </summary>
+        /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
+        /// <param name="profileId">取得できた ProfileId</param>
+        /// <returns>取得できた場合は true</returns>
+        private bool TryGetCurrentProfileId<TProfileAsset>(out string profileId)
+            where TProfileAsset : PaletteProfileAssetBase {
+            if (TryGetCurrentProfileAsset(out TProfileAsset profileAsset)) {
+                profileId = profileAsset.ProfileId;
+                return !string.IsNullOrEmpty(profileId);
+            }
+
+            profileId = null;
             return false;
         }
 

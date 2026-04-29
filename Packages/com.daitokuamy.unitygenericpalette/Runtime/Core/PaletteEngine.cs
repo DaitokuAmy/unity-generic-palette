@@ -45,6 +45,17 @@ namespace UnityGenericPalette {
         }
 
         /// <summary>
+        /// 指定した ProfileAsset 型に対応する現在の Profile ID を取得する
+        /// </summary>
+        /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
+        /// <param name="profileId">取得できた Profile ID</param>
+        /// <returns>取得できた場合は true</returns>
+        public static bool TryGetCurrentProfileId<TProfileAsset>(out string profileId)
+            where TProfileAsset : PaletteProfileAssetBase {
+            return GetRequiredRuntimeInstance().TryGetCurrentProfileIdInternal<TProfileAsset>(out profileId);
+        }
+
+        /// <summary>
         /// PaletteAsset に設定された既定 Profile を初期化する
         /// </summary>
         /// <param name="cancellationToken">キャンセル制御に使うトークン</param>
@@ -67,6 +78,10 @@ namespace UnityGenericPalette {
 
         bool IPaletteProfileContext.TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset) {
             return TryGetCurrentProfileAsset(out profileAsset);
+        }
+
+        bool IPaletteProfileContext.TryGetCurrentProfileId<TProfileAsset>(out string profileId) {
+            return TryGetCurrentProfileIdInternal<TProfileAsset>(out profileId);
         }
 
         /// <summary>
@@ -147,6 +162,32 @@ namespace UnityGenericPalette {
             }
 
             profileAsset = null;
+            return false;
+        }
+
+        /// <summary>
+        /// 指定した ProfileAsset 型に対応する現在の Profile ID を取得する
+        /// </summary>
+        /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
+        /// <param name="profileId">取得できた Profile ID</param>
+        /// <returns>取得できた場合は true</returns>
+        private bool TryGetCurrentProfileIdInternal<TProfileAsset>(out string profileId)
+            where TProfileAsset : PaletteProfileAssetBase {
+            foreach (var loadedProfileAssetPair in _loadedProfileAssets) {
+                if (loadedProfileAssetPair.Value is not TProfileAsset typedProfileAsset) {
+                    continue;
+                }
+
+                if (_currentProfileIds.TryGetValue(loadedProfileAssetPair.Key, out profileId) &&
+                    !string.IsNullOrEmpty(profileId)) {
+                    return true;
+                }
+
+                profileId = typedProfileAsset.ProfileId;
+                return !string.IsNullOrEmpty(profileId);
+            }
+
+            profileId = null;
             return false;
         }
 

@@ -22,7 +22,7 @@ MonoBehaviour:
   - _entryId: Accent01
     _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC"
     _description: 
-  - _entryId: Position01
+  - _entryId: Positive01
     _displayName: "\u30DD\u30B8\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC"
     _description: 
   - _entryId: Negative01
