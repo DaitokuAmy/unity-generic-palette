@@ -25,6 +25,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4c3444ee11031564d942264c0b383dcb
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/GradientPaletteProfileAsset_Default.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 50361ce8643be6d40b8480cf48897947
     m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/LegacyTextStylePaletteProfileAsset_Default.asset
     m_ReadOnly: 0

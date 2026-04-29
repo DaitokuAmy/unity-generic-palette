@@ -300,6 +300,9 @@ namespace UnityGenericPalette.Editor {
                 case SerializedPropertyType.Bounds:
                     destinationProperty.boundsValue = sourceProperty.boundsValue;
                     return;
+                case SerializedPropertyType.Gradient:
+                    destinationProperty.gradientValue = sourceProperty.gradientValue;
+                    return;
                 case SerializedPropertyType.Quaternion:
                     destinationProperty.quaternionValue = sourceProperty.quaternionValue;
                     return;
