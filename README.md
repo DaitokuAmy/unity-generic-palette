@@ -297,31 +297,117 @@ Editor は `PaletteProfileAsset` の作成・リネーム・削除・Project 変
 
 ## Extending with Custom Palettes
 
-独自パレットを追加したい場合は、次の 2 型を作ります。
+独自パレットを追加するときは、次の 3 つをそろえると流れが分かりやすくなります。
 
-1. `PaletteAssetBase` 派生型
-2. `PaletteProfileAssetBase<TPaletteAsset, TValue>` 派生型
+1. 値型を決める
+2. `PaletteAsset` / `PaletteProfileAsset` を作る
+3. 値を反映する `Applier` を作る
 
-`PaletteAsset` 側には、対応する Profile 型を示す属性を付けます。
+### 1. Decide the value type
+
+まず「Profile ごとに何を切り替えたいか」を値型として決めます。`Color` や `float` のような単純な型でもよいですし、複数の値をまとめたい場合は `[System.Serializable]` な独自 struct でも構いません。
+
+たとえば `Image.sprite` を差し替えたいなら、値型は `Sprite` です。
+
+### 2. Create `PaletteAsset` and `PaletteProfileAsset`
+
+`PaletteAsset` は `EntryId` の一覧を持つ定義アセット、`PaletteProfileAsset` は各 `EntryId` に対応する実値を持つアセットです。`PaletteAsset` 側には、対応する Profile 型を示す `[PaletteProfileAsset(...)]` 属性を付けます。
+
+ファイルは分けて作ると管理しやすくなります。たとえば `Sprite` を切り替える独自パレットなら、次の 2 ファイルから始められます。
+
+`SpritePaletteAsset.cs`
 
 ```csharp
-using UnityEngine;
+using UnityGenericPalette;
 
-namespace UnityGenericPalette {
-    [PaletteProfileAsset(typeof(MyPaletteProfileAsset))]
-    public sealed class MyPaletteAsset : PaletteAssetBase {
-    }
-
-    public sealed class MyPaletteProfileAsset : PaletteProfileAssetBase<MyPaletteAsset, MyValueType> {
+namespace App.Palette {
+    [PaletteProfileAsset(typeof(SpritePaletteProfileAsset))]
+    public sealed class SpritePaletteAsset : PaletteAssetBase {
     }
 }
 ```
 
-必要に応じて追加するもの:
+`SpritePaletteProfileAsset.cs`
 
-- `PropertyDrawer`
-- `Applier`
-- 独自 `Loader`
+```csharp
+using UnityEngine;
+using UnityGenericPalette;
+
+namespace App.Palette {
+    public sealed class SpritePaletteProfileAsset : PaletteProfileAssetBase<SpritePaletteAsset, Sprite> {
+    }
+}
+```
+
+これだけで、`PaletteEditorWindow` から `SpritePaletteAsset` を追加し、`Entry` や `Profile` を編集できるようになります。
+
+### 3. Create an `Applier`
+
+ランタイムで値を実際のコンポーネントへ反映するには、`PaletteApplierBase<TPaletteAsset, TPaletteProfileAsset, TValue>` を継承した `Applier` を作ります。やることは基本的に `ApplyValue` の実装だけです。
+
+`ImageSpritePaletteApplier.cs`
+
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+using UnityGenericPalette;
+
+namespace App.Palette {
+    [AddComponentMenu("App/Palette/Image Sprite Palette Applier")]
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(Image))]
+    public sealed class ImageSpritePaletteApplier : PaletteApplierBase<SpritePaletteAsset, SpritePaletteProfileAsset, Sprite> {
+        [SerializeField, Tooltip("Sprite を反映する Image コンポーネント")]
+        private Image _targetImage;
+
+        protected override void ApplyValue(Sprite value) {
+            if (_targetImage == null) {
+                return;
+            }
+
+            _targetImage.sprite = value;
+        }
+
+        protected override void OnValidateInternal() {
+            AssignTargetImageIfNeeded();
+        }
+
+        private void Reset() {
+            AssignTargetImageIfNeeded();
+        }
+
+        private void AssignTargetImageIfNeeded() {
+            if (_targetImage != null) {
+                return;
+            }
+
+            _targetImage = GetComponent<Image>();
+        }
+    }
+}
+```
+
+`PaletteApplierBase` は現在の Profile 変更を購読し、設定された `EntryId` に対して `TryGetValueById` で値を取り出してくれます。独自 `Applier` 側では、受け取った値をどのコンポーネントへどう反映するかだけ考えれば十分です。
+
+### 4. Use it in the editor
+
+実装ができたら、使い方は組み込みパレットとほぼ同じです。
+
+1. `PaletteEditorWindow` で新しい `PaletteAsset` を追加する
+2. `EntryId` を定義する
+3. その `PaletteAsset` に対応する `PaletteProfileAsset` を作る
+4. Profile ごとに値を設定する
+5. 対象 GameObject に独自 `Applier` を追加して `EntryId` を指定する
+
+### 5. When you may need extra editor code
+
+単純な `Color`、`float`、`Sprite`、`Gradient` のように Unity がそのまま表示できる型なら、上の 3 ステップだけで始められることが多いです。
+
+次のような場合は追加実装を検討してください。
+
+- 値型が複雑で Inspector 表示を整えたい場合: `PropertyDrawer`
+- ランタイムで独自の取得元から Profile を読みたい場合: 独自 `Loader`
+- 1 つの値を複数コンポーネントへまとめて適用したい場合: 専用 `Applier`
 
 ## Sample
 
