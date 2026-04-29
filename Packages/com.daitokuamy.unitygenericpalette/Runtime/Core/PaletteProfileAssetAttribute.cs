@@ -17,8 +17,8 @@ namespace UnityGenericPalette {
                 throw new ArgumentNullException(nameof(profileAssetType));
             }
 
-            if (!typeof(UnityEngine.ScriptableObject).IsAssignableFrom(profileAssetType)) {
-                throw new ArgumentException("Profile asset type must inherit from ScriptableObject.", nameof(profileAssetType));
+            if (!typeof(PaletteProfileAssetBase).IsAssignableFrom(profileAssetType)) {
+                throw new ArgumentException("Profile asset type must inherit from PaletteProfileAssetBase.", nameof(profileAssetType));
             }
 
             ProfileAssetType = profileAssetType;

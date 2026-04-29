@@ -51,7 +51,7 @@ namespace UnityGenericPalette {
             }
 
             var profileId = GenerateUniqueProfileId(paletteAsset);
-            var profileAsset = CreateInstance(profileAssetType) as ScriptableObject;
+            var profileAsset = CreateInstance(profileAssetType) as PaletteProfileAssetBase;
             if (profileAsset == null) {
                 return;
             }
@@ -97,7 +97,7 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="profileAsset">削除対象</param>
         /// <param name="resetSelection">選択状態をリセットするか</param>
-        private void DeleteProfileAsset(ScriptableObject profileAsset, bool resetSelection) {
+        private void DeleteProfileAsset(PaletteProfileAssetBase profileAsset, bool resetSelection) {
             var assetPath = AssetDatabase.GetAssetPath(profileAsset);
             if (!string.IsNullOrEmpty(assetPath)) {
                 AssetDatabase.DeleteAsset(assetPath);
@@ -131,7 +131,7 @@ namespace UnityGenericPalette {
             }
 
             _profileAssetListItems = GetProfileAssets(_selectedPaletteAsset);
-            _profileAssetList = new ReorderableList(_profileAssetListItems, typeof(ScriptableObject), true, true, true, true);
+            _profileAssetList = new ReorderableList(_profileAssetListItems, typeof(PaletteProfileAssetBase), true, true, true, true);
             _profileAssetListPaletteAsset = _selectedPaletteAsset;
             _profileAssetList.elementHeight = EditorGUIUtility.singleLineHeight + 6f;
             _profileAssetList.drawHeaderCallback = DrawProfileAssetListHeader;
@@ -309,7 +309,7 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="profileAsset">対象 ProfileAsset</param>
         /// <param name="profileId">更新後の ProfileId</param>
-        private void RenameProfileAsset(ScriptableObject profileAsset, string profileId) {
+        private void RenameProfileAsset(PaletteProfileAssetBase profileAsset, string profileId) {
             if (profileAsset == null) {
                 return;
             }

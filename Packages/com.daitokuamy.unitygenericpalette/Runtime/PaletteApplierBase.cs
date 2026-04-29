@@ -7,7 +7,7 @@ namespace UnityGenericPalette {
     public abstract class PaletteApplierBase<TPaletteAsset, TPaletteProfileAsset, TValue> : MonoBehaviour
         where TPaletteAsset : PaletteAssetBase
         where TPaletteProfileAsset : PaletteProfileAssetBase<TPaletteAsset, TValue> {
-        [SerializeField, Tooltip("参照する Entry の安定 ID")]
+        [SerializeField, PaletteEntryId, Tooltip("参照する Entry の安定 ID")]
         private string _entryId;
 
         /// <summary>参照する Entry の安定 ID</summary>
@@ -23,14 +23,12 @@ namespace UnityGenericPalette {
             }
 
             paletteEngine.SubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
-            if (paletteEngine.TryGetCurrentProfileAsset<TPaletteProfileAsset>(out var paletteProfileAsset)) {
-                OnChangedProfile(paletteProfileAsset);
-            }
+            ApplyCurrentProfileIfAvailable(paletteEngine);
         }
 
         /// <summary>
-        /// 無効化時の処理
-        /// </summary>
+         /// 無効化時の処理
+         /// </summary>
         protected virtual void OnDisable() {
             var paletteEngine = PaletteEngine.RuntimeInstance;
             if (paletteEngine == null) {
@@ -41,10 +39,40 @@ namespace UnityGenericPalette {
         }
 
         /// <summary>
+        /// 値変更時の再反映処理
+        /// </summary>
+        private void OnValidate() {
+            OnValidateInternal();
+
+            var paletteEngine = PaletteEngine.RuntimeInstance;
+            if (paletteEngine == null) {
+                return;
+            }
+
+            ApplyCurrentProfileIfAvailable(paletteEngine);
+        }
+
+        /// <summary>
         /// 解決済みの値を対象へ反映する
         /// </summary>
         /// <param name="value">反映する値</param>
         protected abstract void ApplyValue(TValue value);
+
+        /// <summary>
+        /// OnValidate 時の拡張処理
+        /// </summary>
+        protected virtual void OnValidateInternal() {
+        }
+
+        /// <summary>
+        /// 現在の Profile が存在する場合に反映する
+        /// </summary>
+        /// <param name="paletteEngine">参照する PaletteEngine</param>
+        private void ApplyCurrentProfileIfAvailable(PaletteEngine paletteEngine) {
+            if (paletteEngine.TryGetCurrentProfileAsset<TPaletteProfileAsset>(out var paletteProfileAsset)) {
+                OnChangedProfile(paletteProfileAsset);
+            }
+        }
 
         /// <summary>
         /// プロファイル変更通知

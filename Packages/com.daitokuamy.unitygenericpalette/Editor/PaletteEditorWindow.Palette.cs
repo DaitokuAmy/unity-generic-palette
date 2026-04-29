@@ -191,7 +191,7 @@ namespace UnityGenericPalette {
         /// 指定した Profile から現在の値をコピーする
         /// </summary>
         /// <param name="sourceProfileAsset">コピー元 ProfileAsset</param>
-        private void CopyProfileValueFrom(ScriptableObject sourceProfileAsset) {
+        private void CopyProfileValueFrom(PaletteProfileAssetBase sourceProfileAsset) {
             if (_selectedPaletteAsset == null || _selectedProfileAsset == null || sourceProfileAsset == null) {
                 return;
             }

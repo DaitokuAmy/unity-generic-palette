@@ -12,9 +12,6 @@ namespace UnityGenericPalette {
         [SerializeField, Tooltip("色を反映する Graphic コンポーネント")]
         private Graphic _targetGraphic;
 
-        /// <summary>色を反映する Graphic コンポーネント</summary>
-        public Graphic TargetGraphic => _targetGraphic;
-
         /// <summary>
         /// 解決済みの Color を Graphic に反映する
         /// </summary>
@@ -28,16 +25,16 @@ namespace UnityGenericPalette {
         }
 
         /// <summary>
-        /// コンポーネント追加時に参照を補完する
+        /// Inspector 更新時に参照を補完する
         /// </summary>
-        private void Reset() {
+        protected override void OnValidateInternal() {
             AssignTargetGraphicIfNeeded();
         }
 
         /// <summary>
-        /// Inspector 更新時に参照を補完する
+        /// コンポーネント追加時に参照を補完する
         /// </summary>
-        private void OnValidate() {
+        private void Reset() {
             AssignTargetGraphicIfNeeded();
         }
 

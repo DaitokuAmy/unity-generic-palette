@@ -4,30 +4,39 @@ using UnityEngine;
 
 namespace UnityGenericPalette {
     /// <summary>
-    /// 特定の Palette に対応する値アセットの基底
+    /// すべての ProfileAsset が持つ共通情報を表す基底
     /// </summary>
-    /// <typeparam name="TPaletteAsset">対応する Palette の型</typeparam>
-    /// <typeparam name="TValue">保持する値の型</typeparam>
-    public abstract class PaletteProfileAssetBase<TPaletteAsset, TValue> : ScriptableObject, IPaletteProfileAsset
-        where TPaletteAsset : PaletteAssetBase {
+    public abstract class PaletteProfileAssetBase : ScriptableObject {
         [SerializeField, Tooltip("対応する Profile の ID")]
         private string _profileId;
         [SerializeField, Tooltip("Profile 一覧表示用の並び順")]
         private int _sortOrder;
+
+        /// <summary>対応する Profile の ID</summary>
+        public string ProfileId => _profileId;
+        /// <summary>Profile 一覧表示用の並び順</summary>
+        public int SortOrder => _sortOrder;
+        /// <summary>対応する Palette アセット</summary>
+        public abstract PaletteAssetBase PaletteAssetBase { get; }
+    }
+
+    /// <summary>
+    /// 特定の Palette に対応する値アセットの基底
+    /// </summary>
+    /// <typeparam name="TPaletteAsset">対応する Palette の型</typeparam>
+    /// <typeparam name="TValue">保持する値の型</typeparam>
+    public abstract class PaletteProfileAssetBase<TPaletteAsset, TValue> : PaletteProfileAssetBase
+        where TPaletteAsset : PaletteAssetBase {
         [SerializeField, Tooltip("対応する Palette アセット")]
         private TPaletteAsset _paletteAsset;
         [SerializeField, Tooltip("EntryId と値を対応付けた一覧")]
         private List<PaletteProfileValue<TValue>> _values = new();
         private Dictionary<string, int> _entryIndexCache;
         
-        /// <summary>対応する Profile の ID</summary>
-        public string ProfileId => _profileId;
-        /// <summary>Profile 一覧表示用の並び順</summary>
-        public int SortOrder => _sortOrder;
         /// <summary>対応する Palette アセット</summary>
         public TPaletteAsset PaletteAsset => _paletteAsset;
         /// <summary>対応する Palette アセット</summary>
-        public PaletteAssetBase PaletteAssetBase => _paletteAsset;
+        public override PaletteAssetBase PaletteAssetBase => _paletteAsset;
         /// <summary>保持している値の数</summary>
         public int ValueCount => _values.Count;
 
@@ -54,7 +63,7 @@ namespace UnityGenericPalette {
                     nameof(index),
                     index,
                     $"Index is out of range in {GetType().Name} " +
-                    $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{_profileId}', ValueCount: {_values.Count}).");
+                    $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}', ValueCount: {_values.Count}).");
             }
 
             return _values[index].Value;
@@ -78,7 +87,7 @@ namespace UnityGenericPalette {
 
             throw new KeyNotFoundException(
                 $"EntryId '{entryId}' was not found in {GetType().Name} " +
-                $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{_profileId}', ValueCount: {_values.Count}).");
+                $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}', ValueCount: {_values.Count}).");
         }
 
         /// <summary>
@@ -116,7 +125,7 @@ namespace UnityGenericPalette {
                 if (_entryIndexCache.ContainsKey(profileValue.EntryId)) {
                     throw new InvalidOperationException(
                         $"Duplicate EntryId '{profileValue.EntryId}' was found in {GetType().Name} " +
-                        $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{_profileId}').");
+                        $"(PaletteType: {typeof(TPaletteAsset).Name}, ProfileId: '{ProfileId}').");
                 }
 
                 _entryIndexCache.Add(profileValue.EntryId, i);

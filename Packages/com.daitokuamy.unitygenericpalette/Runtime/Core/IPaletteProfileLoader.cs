@@ -24,12 +24,12 @@ namespace UnityGenericPalette {
 #else
         Task<TProfileAsset> LoadAsync<TProfileAsset>(string profileId, CancellationToken cancellationToken)
 #endif
-            where TProfileAsset : ScriptableObject, IPaletteProfileAsset;
+            where TProfileAsset : PaletteProfileAssetBase;
 
         /// <summary>
         /// ロード済みの ProfileAsset を解放する
         /// </summary>
         /// <param name="profileAsset">解放対象の ProfileAsset</param>
-        void Unload(ScriptableObject profileAsset);
+        void Unload(PaletteProfileAssetBase profileAsset);
     }
 }

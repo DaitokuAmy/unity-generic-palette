@@ -72,8 +72,8 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="paletteAsset">対象の PaletteAsset</param>
         /// <returns>ProfileAsset 一覧</returns>
-        private List<ScriptableObject> GetProfileAssets(PaletteAssetBase paletteAsset) {
-            var profileAssets = new List<ScriptableObject>();
+        private List<PaletteProfileAssetBase> GetProfileAssets(PaletteAssetBase paletteAsset) {
+            var profileAssets = new List<PaletteProfileAssetBase>();
             if (paletteAsset == null) {
                 return profileAssets;
             }
@@ -86,12 +86,12 @@ namespace UnityGenericPalette {
             var guids = AssetDatabase.FindAssets($"t:{profileAssetType.Name}");
             for (var i = 0; i < guids.Length; i++) {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
-                var profileAsset = AssetDatabase.LoadAssetAtPath(assetPath, profileAssetType) as ScriptableObject;
-                if (profileAsset is not IPaletteProfileAsset paletteProfileAsset) {
+                var profileAsset = AssetDatabase.LoadAssetAtPath(assetPath, profileAssetType) as PaletteProfileAssetBase;
+                if (profileAsset == null) {
                     continue;
                 }
 
-                if (paletteProfileAsset.PaletteAssetBase != paletteAsset) {
+                if (profileAsset.PaletteAssetBase != paletteAsset) {
                     continue;
                 }
 
@@ -147,12 +147,12 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="profileAsset">対象 ProfileAsset</param>
         /// <returns>表示ラベル</returns>
-        private string GetProfileLabel(ScriptableObject profileAsset) {
-            if (profileAsset is not IPaletteProfileAsset paletteProfileAsset) {
-                return profileAsset != null ? profileAsset.name : "(Null Profile)";
+        private string GetProfileLabel(PaletteProfileAssetBase profileAsset) {
+            if (profileAsset == null) {
+                return "(Null Profile)";
             }
 
-            return string.IsNullOrEmpty(paletteProfileAsset.ProfileId) ? profileAsset.name : paletteProfileAsset.ProfileId;
+            return string.IsNullOrEmpty(profileAsset.ProfileId) ? profileAsset.name : profileAsset.ProfileId;
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace UnityGenericPalette {
         /// <param name="left">左側のアセット</param>
         /// <param name="right">右側のアセット</param>
         /// <returns>比較結果</returns>
-        private int CompareProfileAsset(ScriptableObject left, ScriptableObject right) {
+        private int CompareProfileAsset(PaletteProfileAssetBase left, PaletteProfileAssetBase right) {
             var leftSortOrder = GetProfileSortOrder(left);
             var rightSortOrder = GetProfileSortOrder(right);
             var compareSortOrder = leftSortOrder.CompareTo(rightSortOrder);
@@ -169,8 +169,8 @@ namespace UnityGenericPalette {
                 return compareSortOrder;
             }
 
-            var leftProfileId = left is IPaletteProfileAsset leftProfileAsset ? leftProfileAsset.ProfileId : string.Empty;
-            var rightProfileId = right is IPaletteProfileAsset rightProfileAsset ? rightProfileAsset.ProfileId : string.Empty;
+            var leftProfileId = left != null ? left.ProfileId : string.Empty;
+            var rightProfileId = right != null ? right.ProfileId : string.Empty;
             return string.Compare(leftProfileId, rightProfileId, StringComparison.Ordinal);
         }
 
@@ -179,14 +179,8 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="profileAsset">対象 ProfileAsset</param>
         /// <returns>並び順</returns>
-        private int GetProfileSortOrder(ScriptableObject profileAsset) {
-            if (profileAsset == null) {
-                return int.MaxValue;
-            }
-
-            var serializedObject = new SerializedObject(profileAsset);
-            var sortOrderProperty = serializedObject.FindProperty("_sortOrder");
-            return sortOrderProperty != null ? sortOrderProperty.intValue : int.MaxValue;
+        private int GetProfileSortOrder(PaletteProfileAssetBase profileAsset) {
+            return profileAsset != null ? profileAsset.SortOrder : int.MaxValue;
         }
 
         /// <summary>
@@ -220,11 +214,7 @@ namespace UnityGenericPalette {
             var profileAssets = GetProfileAssets(paletteAsset);
             var profileIds = new HashSet<string>();
             for (var i = 0; i < profileAssets.Count; i++) {
-                if (profileAssets[i] is not IPaletteProfileAsset paletteProfileAsset) {
-                    continue;
-                }
-
-                profileIds.Add(paletteProfileAsset.ProfileId);
+                profileIds.Add(profileAssets[i].ProfileId);
             }
 
             var index = 1;

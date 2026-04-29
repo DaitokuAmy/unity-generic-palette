@@ -29,7 +29,7 @@ namespace UnityGenericPalette {
         [SerializeField]
         private PaletteAssetBase _selectedPaletteAsset;
         [SerializeField]
-        private ScriptableObject _selectedProfileAsset;
+        private PaletteProfileAssetBase _selectedProfileAsset;
         [SerializeField]
         private int _selectedEntryIndex = -1;
         [SerializeField]
@@ -44,7 +44,7 @@ namespace UnityGenericPalette {
         private PaletteAssetBase _paletteEntryListPaletteAsset;
         private ReorderableList _profileAssetList;
         private PaletteAssetBase _profileAssetListPaletteAsset;
-        private List<ScriptableObject> _profileAssetListItems;
+        private List<PaletteProfileAssetBase> _profileAssetListItems;
 
         /// <summary>
         /// Window を開く
