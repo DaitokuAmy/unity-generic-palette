@@ -1,0 +1,14 @@
+{
+    "name": "com.daitokuamy.unitygenericpalette",
+    "displayName": "Unity Generic Palette",
+    "version": "0.9.0",
+    "unity": "6000.0",
+    "license" : "MIT",
+    "dependencies": {
+    },
+    "author": {
+        "name": "Hironori Ito",
+        "url": "https://github.com/DaitokuAmy"
+    },
+    "description": "A library for unifying shared settings such as FontStyle and Color through reusable palettes."
+}
