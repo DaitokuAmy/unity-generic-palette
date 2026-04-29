@@ -1,7 +1,6 @@
 using UnityEditor;
 using UnityEngine;
-
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// PaletteEditorWindow のヘッダー描画
     /// </summary>
@@ -9,7 +8,7 @@ namespace UnityGenericPalette {
         /// <summary>
         /// タブ用 Toolbar を描画する
         /// </summary>
-        private void DrawTabToolbarIMGUI() {
+        private void DrawTabToolbarGui() {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar)) {
                 GUILayout.Space(4f);
 
@@ -28,10 +27,10 @@ namespace UnityGenericPalette {
         /// <summary>
         /// Palette タブの Header を描画する
         /// </summary>
-        private void DrawPaletteHeaderIMGUI() {
+        private void DrawPaletteHeaderGui() {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar)) {
-                    DrawPalettePopupIMGUI();
+                    DrawPalettePopupGui();
 
                     using (new EditorGUI.DisabledScope(_paletteAssetStorage == null || string.IsNullOrEmpty(AssetDatabase.GetAssetPath(_paletteAssetStorage)))) {
                         if (GUILayout.Button("Add", EditorStyles.toolbarButton, GUILayout.Width(HeaderButtonWidth))) {
@@ -50,7 +49,7 @@ namespace UnityGenericPalette {
                 }
 
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar)) {
-                    DrawProfilePopupIMGUI();
+                    DrawProfilePopupGui();
                     GUILayout.FlexibleSpace();
                 }
             }
@@ -59,10 +58,10 @@ namespace UnityGenericPalette {
         /// <summary>
         /// Profile タブの Header を描画する
         /// </summary>
-        private void DrawProfileHeaderIMGUI() {
+        private void DrawProfileHeaderGui() {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar)) {
-                    DrawPalettePopupIMGUI();
+                    DrawPalettePopupGui();
                     GUILayout.FlexibleSpace();
                 }
             }
@@ -71,7 +70,7 @@ namespace UnityGenericPalette {
         /// <summary>
         /// Palette 選択 Popup を描画する
         /// </summary>
-        private void DrawPalettePopupIMGUI() {
+        private void DrawPalettePopupGui() {
             var paletteAssets = GetPaletteAssets();
             GUILayout.Label("Palette", GUILayout.Width(HeaderLabelWidth));
 
@@ -105,7 +104,7 @@ namespace UnityGenericPalette {
         /// <summary>
         /// Profile 選択 Popup を描画する
         /// </summary>
-        private void DrawProfilePopupIMGUI() {
+        private void DrawProfilePopupGui() {
             var profileAssets = GetProfileAssets(_selectedPaletteAsset);
             GUILayout.Label("Profile", GUILayout.Width(HeaderLabelWidth));
 
@@ -130,6 +129,7 @@ namespace UnityGenericPalette {
             }
 
             _selectedProfileAsset = profileAssets[selectedIndex];
+            SetCurrentEditorProfile(_selectedProfileAsset);
             RebuildWindow();
             GUIUtility.ExitGUI();
         }

@@ -4,38 +4,41 @@ namespace UnityGenericPalette {
     /// <summary>
     /// Palette の値をコンポーネントへ反映する MonoBehaviour の基底
     /// </summary>
+    [ExecuteAlways]
     public abstract class PaletteApplierBase<TPaletteAsset, TPaletteProfileAsset, TValue> : MonoBehaviour
         where TPaletteAsset : PaletteAssetBase
         where TPaletteProfileAsset : PaletteProfileAssetBase<TPaletteAsset, TValue> {
-        [SerializeField, PaletteEntryId, Tooltip("参照する Entry の安定 ID")]
+        [SerializeField, PaletteEntryId, Tooltip("参照する Entry の ID")]
         private string _entryId;
 
-        /// <summary>参照する Entry の安定 ID</summary>
+        private IPaletteProfileContext _subscribedPaletteProfileContext;
+
+        /// <summary>参照する Entry の ID</summary>
         public string EntryId => _entryId;
 
         /// <summary>
         /// 有効化時の処理
         /// </summary>
         protected virtual void OnEnable() {
-            var paletteEngine = PaletteEngine.RuntimeInstance;
-            if (paletteEngine == null) {
+            if (!PaletteProfileContextResolver.TryGetCurrent(out var paletteProfileContext)) {
                 return;
             }
 
-            paletteEngine.SubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
-            ApplyCurrentProfileIfAvailable(paletteEngine);
+            _subscribedPaletteProfileContext = paletteProfileContext;
+            _subscribedPaletteProfileContext.SubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
+            ApplyCurrentProfileIfAvailable(_subscribedPaletteProfileContext);
         }
 
         /// <summary>
          /// 無効化時の処理
          /// </summary>
         protected virtual void OnDisable() {
-            var paletteEngine = PaletteEngine.RuntimeInstance;
-            if (paletteEngine == null) {
+            if (_subscribedPaletteProfileContext == null) {
                 return;
             }
 
-            paletteEngine.UnsubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
+            _subscribedPaletteProfileContext.UnsubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
+            _subscribedPaletteProfileContext = null;
         }
 
         /// <summary>
@@ -44,12 +47,11 @@ namespace UnityGenericPalette {
         private void OnValidate() {
             OnValidateInternal();
 
-            var paletteEngine = PaletteEngine.RuntimeInstance;
-            if (paletteEngine == null) {
+            if (!PaletteProfileContextResolver.TryGetCurrent(out var paletteProfileContext)) {
                 return;
             }
 
-            ApplyCurrentProfileIfAvailable(paletteEngine);
+            ApplyCurrentProfileIfAvailable(paletteProfileContext);
         }
 
         /// <summary>
@@ -67,9 +69,9 @@ namespace UnityGenericPalette {
         /// <summary>
         /// 現在の Profile が存在する場合に反映する
         /// </summary>
-        /// <param name="paletteEngine">参照する PaletteEngine</param>
-        private void ApplyCurrentProfileIfAvailable(PaletteEngine paletteEngine) {
-            if (paletteEngine.TryGetCurrentProfileAsset<TPaletteProfileAsset>(out var paletteProfileAsset)) {
+        /// <param name="paletteProfileContext">参照する ProfileContext</param>
+        private void ApplyCurrentProfileIfAvailable(IPaletteProfileContext paletteProfileContext) {
+            if (paletteProfileContext.TryGetCurrentProfileAsset<TPaletteProfileAsset>(out var paletteProfileAsset)) {
                 OnChangedProfile(paletteProfileAsset);
             }
         }

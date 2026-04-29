@@ -1,7 +1,6 @@
 using UnityEditor;
 using UnityEngine;
-
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// Unity Generic Palette の Project Settings を保持する
     /// </summary>

@@ -5,7 +5,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// PaletteAssetStorage と関連アセットを編集する EditorWindow
     /// </summary>
@@ -63,7 +63,7 @@ namespace UnityGenericPalette {
         public void CreateGUI() {
             rootVisualElement.Clear();
             rootVisualElement.style.flexDirection = FlexDirection.Column;
-            _tabToolbarContainer = CreateToolbarContainer(DrawTabToolbarIMGUI);
+            _tabToolbarContainer = CreateToolbarContainer(DrawTabToolbarGui);
             rootVisualElement.Add(_tabToolbarContainer);
 
             _headerContainer = new VisualElement();
@@ -81,6 +81,18 @@ namespace UnityGenericPalette {
             rootVisualElement.Add(_bodyContainer);
 
             RebuildWindow();
+        }
+
+        /// <summary>
+        /// Unity の選択変更時に再描画する
+        /// </summary>
+        private void OnSelectionChange() {
+            if (_tabMode != TabMode.Palette) {
+                return;
+            }
+
+            rootVisualElement?.MarkDirtyRepaint();
+            Repaint();
         }
 
         /// <summary>
@@ -115,7 +127,7 @@ namespace UnityGenericPalette {
         /// Palette タブを構築する
         /// </summary>
         private void BuildPaletteTab() {
-            _headerContainer.Add(CreateToolbarContainer(DrawPaletteHeaderIMGUI));
+            _headerContainer.Add(CreateToolbarContainer(DrawPaletteHeaderGui));
 
             var splitView = new TwoPaneSplitView(0, position.width - InspectorWidth - 32f, TwoPaneSplitViewOrientation.Horizontal);
             splitView.style.flexGrow = 1f;
@@ -128,7 +140,7 @@ namespace UnityGenericPalette {
         /// Profile タブを構築する
         /// </summary>
         private void BuildProfileTab() {
-            _headerContainer.Add(CreateToolbarContainer(DrawProfileHeaderIMGUI));
+            _headerContainer.Add(CreateToolbarContainer(DrawProfileHeaderGui));
             _bodyContainer.Add(CreateProfileBody());
         }
 
@@ -140,7 +152,7 @@ namespace UnityGenericPalette {
             var container = new VisualElement();
             container.style.flexGrow = 1f;
 
-            var body = new IMGUIContainer(DrawPaletteBodyIMGUI);
+            var body = new IMGUIContainer(DrawPaletteBodyGui);
             body.style.flexGrow = 1f;
             container.Add(body);
             return container;
@@ -152,7 +164,7 @@ namespace UnityGenericPalette {
         /// <returns>生成した要素</returns>
         private VisualElement CreatePaletteInspector() {
             var scrollView = CreateInspectorScrollView();
-            var inspector = new IMGUIContainer(DrawPaletteInspectorIMGUI);
+            var inspector = new IMGUIContainer(DrawPaletteInspectorGui);
             inspector.style.flexGrow = 1f;
             scrollView.Add(inspector);
             return scrollView;
@@ -166,14 +178,14 @@ namespace UnityGenericPalette {
             var container = new VisualElement();
             container.style.flexGrow = 1f;
 
-            var body = new IMGUIContainer(DrawProfileBodyIMGUI);
+            var body = new IMGUIContainer(DrawProfileBodyGui);
             body.style.flexGrow = 1f;
             container.Add(body);
             return container;
         }
 
         /// <summary>
-        /// IMGUI ベースの Toolbar コンテナを生成する
+        /// Gui ベースの Toolbar コンテナを生成する
         /// </summary>
         /// <param name="onGUIHandler">描画ハンドラー</param>
         /// <returns>生成した要素</returns>
@@ -203,7 +215,7 @@ namespace UnityGenericPalette {
             var container = new VisualElement();
             container.style.flexGrow = 1f;
 
-            var body = new IMGUIContainer(DrawPaletteAssetStorageMissingIMGUI);
+            var body = new IMGUIContainer(DrawPaletteAssetStorageMissingGui);
             body.style.flexGrow = 1f;
             container.Add(body);
             return container;

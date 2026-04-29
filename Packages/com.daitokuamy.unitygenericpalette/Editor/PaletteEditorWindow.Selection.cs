@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// PaletteEditorWindow の選択状態と共通ヘルパー
     /// </summary>
@@ -294,7 +293,7 @@ namespace UnityGenericPalette {
         /// <summary>
         /// PaletteAssetStorage 未設定時の案内 UI を描画する
         /// </summary>
-        private void DrawPaletteAssetStorageMissingIMGUI() {
+        private void DrawPaletteAssetStorageMissingGui() {
             EditorGUILayout.HelpBox("Project Settings で PaletteAssetStorage を設定してください。", MessageType.Warning);
 
             using (new EditorGUILayout.HorizontalScope()) {
@@ -332,6 +331,18 @@ namespace UnityGenericPalette {
             _selectedProfileAsset = null;
             _selectedEntryIndex = -1;
             RebuildWindow();
+        }
+
+        /// <summary>
+        /// Edit Mode 用 current profile を更新する
+        /// </summary>
+        /// <param name="profileAsset">設定する ProfileAsset</param>
+        private void SetCurrentEditorProfile(PaletteProfileAssetBase profileAsset) {
+            if (profileAsset == null) {
+                return;
+            }
+
+            PaletteEditorProfileContext.Instance.SetCurrentProfile(profileAsset);
         }
     }
 }

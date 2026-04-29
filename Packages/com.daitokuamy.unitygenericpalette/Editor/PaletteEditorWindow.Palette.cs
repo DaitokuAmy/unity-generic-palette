@@ -5,17 +5,17 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// PaletteEditorWindow の Palette タブ処理
     /// </summary>
     public sealed partial class PaletteEditorWindow {
         /// <summary>
-        /// Palette Body の IMGUI を描画する
+        /// Palette Body の Gui を描画する
         /// </summary>
-        private void DrawPaletteBodyIMGUI() {
+        private void DrawPaletteBodyGui() {
             if (_paletteAssetStorage == null) {
-                DrawPaletteAssetStorageMissingIMGUI();
+                DrawPaletteAssetStorageMissingGui();
                 return;
             }
 
@@ -59,9 +59,9 @@ namespace UnityGenericPalette {
         }
 
         /// <summary>
-        /// Palette Inspector の IMGUI を描画する
+        /// Palette Inspector の Gui を描画する
         /// </summary>
-        private void DrawPaletteInspectorIMGUI() {
+        private void DrawPaletteInspectorGui() {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 GUILayout.Label("Inspector", EditorStyles.boldLabel);
                 EditorGUILayout.Space(4f);
@@ -76,7 +76,7 @@ namespace UnityGenericPalette {
                     return;
                 }
 
-                DrawSelectedEntryInspectorIMGUI();
+                DrawSelectedEntryInspectorGui();
 
                 EditorGUILayout.Space(8f);
 
@@ -85,14 +85,14 @@ namespace UnityGenericPalette {
                     return;
                 }
 
-                DrawSelectedCellInspectorIMGUI();
+                DrawSelectedCellInspectorGui();
             }
         }
 
         /// <summary>
         /// 選択中 Entry の Inspector を描画する
         /// </summary>
-        private void DrawSelectedEntryInspectorIMGUI() {
+        private void DrawSelectedEntryInspectorGui() {
             GUILayout.Label("Entry", EditorStyles.miniBoldLabel);
 
             var serializedObject = new SerializedObject(_selectedPaletteAsset);
@@ -117,7 +117,7 @@ namespace UnityGenericPalette {
         /// <summary>
         /// 選択中セルの Inspector を描画する
         /// </summary>
-        private void DrawSelectedCellInspectorIMGUI() {
+        private void DrawSelectedCellInspectorGui() {
             GUILayout.Label("Profile Value", EditorStyles.miniBoldLabel);
 
             var serializedObject = new SerializedObject(_selectedProfileAsset);
@@ -134,16 +134,17 @@ namespace UnityGenericPalette {
             EditorGUILayout.PropertyField(valueProperty, true);
             if (serializedObject.ApplyModifiedProperties()) {
                 EditorUtility.SetDirty(_selectedProfileAsset);
+                PaletteEditorProfileContext.Instance.NotifyProfileChanged(_selectedProfileAsset);
             }
 
             EditorGUILayout.Space(6f);
-            DrawCopyProfileValueButtonIMGUI();
+            DrawCopyProfileValueButtonGui();
         }
 
         /// <summary>
         /// 他の Profile から値をコピーするボタンを描画する
         /// </summary>
-        private void DrawCopyProfileValueButtonIMGUI() {
+        private void DrawCopyProfileValueButtonGui() {
             var hasCopySource = false;
             var profileAssets = GetProfileAssets(_selectedPaletteAsset);
             for (var i = 0; i < profileAssets.Count; i++) {
@@ -226,6 +227,7 @@ namespace UnityGenericPalette {
 
             targetSerializedObject.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(_selectedProfileAsset);
+            PaletteEditorProfileContext.Instance.NotifyProfileChanged(_selectedProfileAsset);
             AssetDatabase.SaveAssets();
             Repaint();
         }
@@ -674,6 +676,8 @@ namespace UnityGenericPalette {
         /// <param name="rect">描画領域</param>
         private void DrawPaletteEntryListHeader(Rect rect) {
             EditorGUI.LabelField(rect, "Entry");
+            var applyLabelRect = new Rect(rect.xMax - 56f, rect.y, 56f, rect.height);
+            EditorGUI.LabelField(applyLabelRect, "Apply");
         }
 
         /// <summary>
@@ -689,7 +693,16 @@ namespace UnityGenericPalette {
             }
 
             var rowRect = new Rect(rect.x, rect.y + 2f, rect.width, EditorGUIUtility.singleLineHeight);
-            EditorGUI.LabelField(rowRect, GetEntryLabel(_selectedPaletteAsset.Entries[index]));
+            var labelRect = new Rect(rowRect.x, rowRect.y, rowRect.width - 64f, rowRect.height);
+            var applyButtonRect = new Rect(rowRect.xMax - 56f, rowRect.y, 56f, rowRect.height);
+            var paletteEntry = _selectedPaletteAsset.Entries[index];
+            EditorGUI.LabelField(labelRect, GetEntryLabel(paletteEntry));
+
+            using (new EditorGUI.DisabledScope(!CanApplyPaletteEntry())) {
+                if (GUI.Button(applyButtonRect, "Apply", EditorStyles.miniButton)) {
+                    ApplyPaletteEntryToSelection(paletteEntry, applyButtonRect);
+                }
+            }
         }
 
         /// <summary>
@@ -783,6 +796,178 @@ namespace UnityGenericPalette {
             _selectedEntryIndex = insertIndex;
             InvalidatePaletteEntryList();
             RebuildWindow();
+        }
+
+        /// <summary>
+        /// 現在の選択へ Entry を適用できるか判定する
+        /// </summary>
+        /// <returns>適用可能な場合は true</returns>
+        private bool CanApplyPaletteEntry() {
+            return _selectedPaletteAsset != null && Selection.gameObjects.Length > 0;
+        }
+
+        /// <summary>
+        /// 選択中 GameObject へ Entry を適用する
+        /// </summary>
+        /// <param name="paletteEntry">適用する Entry</param>
+        /// <param name="buttonRect">ボタン位置</param>
+        private void ApplyPaletteEntryToSelection(PaletteEntry paletteEntry, Rect buttonRect) {
+            if (_selectedPaletteAsset == null || paletteEntry == null || string.IsNullOrEmpty(paletteEntry.EntryId)) {
+                return;
+            }
+
+            var applierTypes = GetMatchingApplierTypes(_selectedPaletteAsset);
+            if (applierTypes.Count == 0) {
+                EditorUtility.DisplayDialog(
+                    "Palette Editor",
+                    $"No applier type was found for {_selectedPaletteAsset.GetType().Name}.",
+                    "OK");
+                return;
+            }
+
+            if (applierTypes.Count == 1) {
+                ApplyPaletteEntryToSelection(applierTypes[0], paletteEntry.EntryId);
+                return;
+            }
+
+            var menu = new GenericMenu();
+            for (var i = 0; i < applierTypes.Count; i++) {
+                var applierType = applierTypes[i];
+                menu.AddItem(
+                    new GUIContent(applierType.Name),
+                    false,
+                    () => ApplyPaletteEntryToSelection(applierType, paletteEntry.EntryId));
+            }
+
+            menu.DropDown(buttonRect);
+        }
+
+        /// <summary>
+        /// 指定した Applier 型で選択中 GameObject へ EntryId を反映する
+        /// </summary>
+        /// <param name="applierType">適用する Applier 型</param>
+        /// <param name="entryId">設定する EntryId</param>
+        private void ApplyPaletteEntryToSelection(Type applierType, string entryId) {
+            if (applierType == null || string.IsNullOrEmpty(entryId)) {
+                return;
+            }
+
+            var selectedGameObjects = Selection.gameObjects;
+            if (selectedGameObjects == null || selectedGameObjects.Length == 0) {
+                return;
+            }
+
+            Undo.IncrementCurrentGroup();
+            var undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Apply {applierType.Name}");
+
+            for (var i = 0; i < selectedGameObjects.Length; i++) {
+                var gameObject = selectedGameObjects[i];
+                if (gameObject == null) {
+                    continue;
+                }
+
+                ApplyPaletteEntryToGameObject(gameObject, applierType, entryId);
+            }
+
+            Undo.CollapseUndoOperations(undoGroup);
+        }
+
+        /// <summary>
+        /// 指定した GameObject へ EntryId を反映する
+        /// </summary>
+        /// <param name="gameObject">適用先</param>
+        /// <param name="applierType">適用する Applier 型</param>
+        /// <param name="entryId">設定する EntryId</param>
+        private void ApplyPaletteEntryToGameObject(GameObject gameObject, Type applierType, string entryId) {
+            if (gameObject == null || applierType == null || string.IsNullOrEmpty(entryId)) {
+                return;
+            }
+
+            var applierComponent = gameObject.GetComponent(applierType);
+            if (applierComponent == null) {
+                applierComponent = Undo.AddComponent(gameObject, applierType);
+            }
+
+            if (applierComponent == null) {
+                return;
+            }
+
+            Undo.RecordObject(applierComponent, $"Apply {applierType.Name}");
+            var serializedObject = new SerializedObject(applierComponent);
+            var entryIdProperty = serializedObject.FindProperty("_entryId");
+            if (entryIdProperty == null) {
+                return;
+            }
+
+            serializedObject.Update();
+            entryIdProperty.stringValue = entryId;
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(applierComponent);
+        }
+
+        /// <summary>
+        /// Palette に対応する Applier 型一覧を取得する
+        /// </summary>
+        /// <param name="paletteAsset">対象の PaletteAsset</param>
+        /// <returns>一致した Applier 型一覧</returns>
+        private List<Type> GetMatchingApplierTypes(PaletteAssetBase paletteAsset) {
+            var applierTypes = new List<Type>();
+            if (paletteAsset == null) {
+                return applierTypes;
+            }
+
+            var derivedTypes = TypeCache.GetTypesDerivedFrom<MonoBehaviour>();
+            for (var i = 0; i < derivedTypes.Count; i++) {
+                var applierType = derivedTypes[i];
+                if (applierType.IsAbstract) {
+                    continue;
+                }
+
+                if (!TryGetPaletteApplierTypeArguments(applierType, out var targetPaletteAssetType)) {
+                    continue;
+                }
+
+                if (targetPaletteAssetType != paletteAsset.GetType()) {
+                    continue;
+                }
+
+                applierTypes.Add(applierType);
+            }
+
+            applierTypes.Sort((left, right) => string.Compare(left.Name, right.Name, StringComparison.Ordinal));
+            return applierTypes;
+        }
+
+        /// <summary>
+        /// Applier 型から対応する PaletteAsset 型を取得する
+        /// </summary>
+        /// <param name="applierType">対象の Applier 型</param>
+        /// <param name="paletteAssetType">取得できた PaletteAsset 型</param>
+        /// <returns>取得できた場合は true</returns>
+        private bool TryGetPaletteApplierTypeArguments(Type applierType, out Type paletteAssetType) {
+            paletteAssetType = null;
+            if (applierType == null) {
+                return false;
+            }
+
+            var currentType = applierType;
+            while (currentType != null && currentType != typeof(MonoBehaviour)) {
+                if (currentType.IsGenericType &&
+                    currentType.GetGenericTypeDefinition() == typeof(PaletteApplierBase<,,>)) {
+                    var genericArguments = currentType.GetGenericArguments();
+                    if (genericArguments.Length > 0) {
+                        paletteAssetType = genericArguments[0];
+                        return paletteAssetType != null;
+                    }
+
+                    return false;
+                }
+
+                currentType = currentType.BaseType;
+            }
+
+            return false;
         }
     }
 }

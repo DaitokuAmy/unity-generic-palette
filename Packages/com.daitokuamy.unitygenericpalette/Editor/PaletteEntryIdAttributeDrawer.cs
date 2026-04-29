@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// PaletteEntryIdAttribute の描画を提供する PropertyDrawer
     /// </summary>

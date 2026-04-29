@@ -28,6 +28,7 @@ MonoBehaviour:
   - _entryId: Accent01
     _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC01"
     _description: 
+  _defaultProfileId: Default
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

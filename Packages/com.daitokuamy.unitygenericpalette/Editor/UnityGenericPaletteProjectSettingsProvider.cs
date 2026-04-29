@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-
-namespace UnityGenericPalette {
+namespace UnityGenericPalette.Editor {
     /// <summary>
     /// Unity Generic Palette の Project Settings UI を提供する
     /// </summary>
