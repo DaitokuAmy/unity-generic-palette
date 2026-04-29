@@ -11,6 +11,7 @@ public class Sample : MonoBehaviour {
     /// 開始処理
     /// </summary>
     private IEnumerator Start() {
+        PaletteEngine.SetLoader(new GuidBaseAddressablesLoader());
         yield return PaletteEngine.InitializeAsync().ToCoroutine();
     }
 }

@@ -31,7 +31,7 @@ MonoBehaviour:
     _paragraphSpacing: 0
   - _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     _materialPreset: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-    _fontStyle: 1
+    _fontStyle: 0
     _enableAutoSizing: 0
     _fontSize: 50
     _fontSizeMin: 0

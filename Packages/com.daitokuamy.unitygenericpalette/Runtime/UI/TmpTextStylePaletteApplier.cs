@@ -9,8 +9,21 @@ namespace UnityGenericPalette {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(TMP_Text))]
     public sealed class TmpTextStylePaletteApplier : PaletteApplierBase<TextStylePaletteAsset, TextStylePaletteProfileAsset, TextStylePaletteValue> {
+        /// <summary>
+        /// Palette からの適用を無視する TextStyle 項目
+        /// </summary>
+        [System.Flags]
+        private enum IgnoreStyleMask {
+            None = 0,
+            Material = 1 << 0,
+            FontStyle = 1 << 1,
+            SpacingOptions = 1 << 2,
+        }
+
         [SerializeField, Tooltip("テキストスタイルを反映する TMP_Text コンポーネント")]
         private TMP_Text _targetText;
+        [SerializeField, Tooltip("Palette から適用しない TextStyle 項目")]
+        private IgnoreStyleMask _ignoreStyleMask;
 
         /// <summary>
         /// 解決済みの TextStyle を TMP_Text に反映する
@@ -21,22 +34,36 @@ namespace UnityGenericPalette {
                 return;
             }
 
-            var materialPreset = ResolveMaterialPreset(value);
             _targetText.font = value.FontAsset;
-            _targetText.fontSharedMaterial = materialPreset;
-            _targetText.fontStyle = value.FontStyle;
+            if (!IsIgnored(IgnoreStyleMask.Material)) {
+                _targetText.fontSharedMaterial = ResolveMaterialPreset(value);
+            }
+            if (!IsIgnored(IgnoreStyleMask.FontStyle)) {
+                _targetText.fontStyle = value.FontStyle;
+            }
             _targetText.enableAutoSizing = value.EnableAutoSizing;
             _targetText.fontSize = value.FontSize;
             _targetText.fontSizeMin = value.FontSizeMin;
             _targetText.fontSizeMax = value.FontSizeMax;
-            _targetText.characterWidthAdjustment = value.CharacterWidthAdjustment;
-            _targetText.lineSpacingAdjustment = value.LineSpacingAdjustment;
-            _targetText.characterSpacing = value.CharacterSpacing;
-            _targetText.wordSpacing = value.WordSpacing;
-            _targetText.lineSpacing = value.LineSpacing;
-            _targetText.paragraphSpacing = value.ParagraphSpacing;
+            if (!IsIgnored(IgnoreStyleMask.SpacingOptions)) {
+                _targetText.characterWidthAdjustment = value.CharacterWidthAdjustment;
+                _targetText.lineSpacingAdjustment = value.LineSpacingAdjustment;
+                _targetText.characterSpacing = value.CharacterSpacing;
+                _targetText.wordSpacing = value.WordSpacing;
+                _targetText.lineSpacing = value.LineSpacing;
+                _targetText.paragraphSpacing = value.ParagraphSpacing;
+            }
             _targetText.UpdateMeshPadding();
             _targetText.ForceMeshUpdate();
+        }
+
+        /// <summary>
+        /// 指定した TextStyle 項目を無視する設定か判定する
+        /// </summary>
+        /// <param name="ignoreStyleMask">判定対象の項目</param>
+        /// <returns>無視する設定なら true</returns>
+        private bool IsIgnored(IgnoreStyleMask ignoreStyleMask) {
+            return (_ignoreStyleMask & ignoreStyleMask) != 0;
         }
 
         /// <summary>

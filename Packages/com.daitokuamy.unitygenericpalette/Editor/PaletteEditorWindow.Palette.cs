@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace UnityGenericPalette.Editor {
@@ -939,6 +940,8 @@ namespace UnityGenericPalette.Editor {
                     ApplyPaletteEntryToSelection(paletteEntry, applyButtonRect);
                 }
             }
+
+            HandlePaletteEntryContextMenu(rowRect, index, paletteEntry);
         }
 
         /// <summary>
@@ -948,6 +951,46 @@ namespace UnityGenericPalette.Editor {
         private void OnSelectPaletteEntry(ReorderableList list) {
             _selectedEntryIndex = list.index;
             Repaint();
+        }
+
+        /// <summary>
+        /// Palette Entry 行の右クリックメニューを処理する
+        /// </summary>
+        /// <param name="rowRect">対象行の描画領域</param>
+        /// <param name="index">対象 Entry index</param>
+        /// <param name="paletteEntry">対象 Entry</param>
+        private void HandlePaletteEntryContextMenu(Rect rowRect, int index, PaletteEntry paletteEntry) {
+            var currentEvent = Event.current;
+            if (currentEvent == null ||
+                currentEvent.type != EventType.ContextClick ||
+                !rowRect.Contains(currentEvent.mousePosition)) {
+                return;
+            }
+
+            _selectedEntryIndex = index;
+            if (_paletteEntryList != null) {
+                _paletteEntryList.index = index;
+            }
+
+            ShowPaletteEntryContextMenu(paletteEntry);
+            currentEvent.Use();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Palette Entry 用の右クリックメニューを表示する
+        /// </summary>
+        /// <param name="paletteEntry">対象 Entry</param>
+        private void ShowPaletteEntryContextMenu(PaletteEntry paletteEntry) {
+            var menu = new GenericMenu();
+            if (_selectedPaletteAsset != null && paletteEntry != null && !string.IsNullOrEmpty(paletteEntry.EntryId)) {
+                menu.AddItem(new GUIContent("Select target components"), false, () => SelectTargetComponentsForEntry(paletteEntry));
+            }
+            else {
+                menu.AddDisabledItem(new GUIContent("Select target components"));
+            }
+
+            menu.ShowAsContext();
         }
 
         /// <summary>
@@ -1043,6 +1086,36 @@ namespace UnityGenericPalette.Editor {
         /// <returns>適用可能な場合は true</returns>
         private bool CanApplyPaletteEntry() {
             return _selectedPaletteAsset != null && Selection.gameObjects.Length > 0;
+        }
+
+        /// <summary>
+        /// 現在のステージで指定 Entry を参照している GameObject を一括選択する
+        /// </summary>
+        /// <param name="paletteEntry">対象 Entry</param>
+        private void SelectTargetComponentsForEntry(PaletteEntry paletteEntry) {
+            if (_selectedPaletteAsset == null || paletteEntry == null || string.IsNullOrEmpty(paletteEntry.EntryId)) {
+                return;
+            }
+
+            var applierTypes = GetMatchingApplierTypes(_selectedPaletteAsset);
+            if (applierTypes.Count == 0) {
+                return;
+            }
+
+            var currentStage = StageUtility.GetCurrentStageHandle();
+            var matchedGameObjects = new List<GameObject>();
+            var matchedInstanceIds = new HashSet<int>();
+            for (var i = 0; i < applierTypes.Count; i++) {
+                CollectGameObjectsUsingEntry(applierTypes[i], paletteEntry.EntryId, currentStage, matchedGameObjects, matchedInstanceIds);
+            }
+
+            if (matchedGameObjects.Count == 0) {
+                return;
+            }
+
+            matchedGameObjects.Sort(CompareHierarchyPath);
+            Selection.objects = matchedGameObjects.ToArray();
+            EditorGUIUtility.PingObject(matchedGameObjects[0]);
         }
 
         /// <summary>
@@ -1143,6 +1216,92 @@ namespace UnityGenericPalette.Editor {
             entryIdProperty.stringValue = entryId;
             serializedObject.ApplyModifiedProperties();
             EditorUtility.SetDirty(applierComponent);
+        }
+
+        /// <summary>
+        /// 指定した Applier 型から対象 Entry を参照している GameObject を収集する
+        /// </summary>
+        /// <param name="applierType">対象の Applier 型</param>
+        /// <param name="entryId">対象 EntryId</param>
+        /// <param name="currentStage">現在のステージ</param>
+        /// <param name="matchedGameObjects">収集先リスト</param>
+        /// <param name="matchedInstanceIds">重複除外用の instanceId 集合</param>
+        private void CollectGameObjectsUsingEntry(
+            Type applierType,
+            string entryId,
+            StageHandle currentStage,
+            List<GameObject> matchedGameObjects,
+            HashSet<int> matchedInstanceIds) {
+            var applierObjects = Resources.FindObjectsOfTypeAll(applierType);
+            for (var i = 0; i < applierObjects.Length; i++) {
+                if (applierObjects[i] is not Component applierComponent) {
+                    continue;
+                }
+
+                var gameObject = applierComponent.gameObject;
+                if (gameObject == null ||
+                    EditorUtility.IsPersistent(applierComponent) ||
+                    EditorUtility.IsPersistent(gameObject) ||
+                    (applierComponent.hideFlags & HideFlags.HideInHierarchy) != 0 ||
+                    (gameObject.hideFlags & HideFlags.HideInHierarchy) != 0 ||
+                    !StageUtility.GetStageHandle(gameObject).Equals(currentStage) ||
+                    !HasPaletteEntryId(applierComponent, entryId)) {
+                    continue;
+                }
+
+                if (!matchedInstanceIds.Add(gameObject.GetInstanceID())) {
+                    continue;
+                }
+
+                matchedGameObjects.Add(gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Applier コンポーネントが指定した EntryId を参照しているか判定する
+        /// </summary>
+        /// <param name="applierComponent">対象コンポーネント</param>
+        /// <param name="entryId">確認する EntryId</param>
+        /// <returns>一致する場合は true</returns>
+        private bool HasPaletteEntryId(Component applierComponent, string entryId) {
+            if (applierComponent == null || string.IsNullOrEmpty(entryId)) {
+                return false;
+            }
+
+            var serializedObject = new SerializedObject(applierComponent);
+            serializedObject.Update();
+            var entryIdProperty = serializedObject.FindProperty("_entryId");
+            return entryIdProperty != null && entryIdProperty.stringValue == entryId;
+        }
+
+        /// <summary>
+        /// Hierarchy 上のパス文字列で GameObject を比較する
+        /// </summary>
+        /// <param name="left">左側の GameObject</param>
+        /// <param name="right">右側の GameObject</param>
+        /// <returns>比較結果</returns>
+        private int CompareHierarchyPath(GameObject left, GameObject right) {
+            return string.Compare(GetHierarchyPath(left), GetHierarchyPath(right), StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// GameObject の Hierarchy パス文字列を取得する
+        /// </summary>
+        /// <param name="gameObject">対象 GameObject</param>
+        /// <returns>Hierarchy パス</returns>
+        private string GetHierarchyPath(GameObject gameObject) {
+            if (gameObject == null) {
+                return string.Empty;
+            }
+
+            var path = gameObject.name;
+            var current = gameObject.transform.parent;
+            while (current != null) {
+                path = $"{current.name}/{path}";
+                current = current.parent;
+            }
+
+            return path;
         }
 
         /// <summary>

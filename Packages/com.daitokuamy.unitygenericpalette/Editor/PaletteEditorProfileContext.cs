@@ -285,6 +285,17 @@ namespace UnityGenericPalette.Editor {
                 return false;
             }
 
+            if (paletteAsset.TryGetProfileAssetGuid(profileId, out var profileGuid)) {
+                var profileAssetPath = AssetDatabase.GUIDToAssetPath(profileGuid);
+                var referencedProfileAsset = AssetDatabase.LoadAssetAtPath<TProfileAsset>(profileAssetPath);
+                if (referencedProfileAsset != null &&
+                    referencedProfileAsset.PaletteAssetBase == paletteAsset &&
+                    referencedProfileAsset.ProfileId == profileId) {
+                    profileAsset = referencedProfileAsset;
+                    return true;
+                }
+            }
+
             var guids = AssetDatabase.FindAssets($"t:{typeof(TProfileAsset).Name}");
             for (var i = 0; i < guids.Length; i++) {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);

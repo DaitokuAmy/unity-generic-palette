@@ -130,7 +130,6 @@ namespace UnityGenericPalette.Editor {
             }
 
             _selectedProfileAsset = profileAssets[selectedIndex];
-            SetCurrentEditorProfile(_selectedProfileAsset, false);
             RebuildWindow();
             GUIUtility.ExitGUI();
         }

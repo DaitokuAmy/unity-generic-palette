@@ -29,6 +29,13 @@ MonoBehaviour:
     _displayName: "\u30A2\u30AF\u30BB\u30F3\u30C8\u30AB\u30E9\u30FC01"
     _description: 
   _defaultProfileId: Default
+  _profileReferences:
+  - _profileId: Default
+    _assetGuid: b4fbb08bcb6029840b0a7fddcdc39219
+  - _profileId: Purple
+    _assetGuid: b5b49bd3821f1df47821570ecc9f74f2
+  - _profileId: Red
+    _assetGuid: 4a925038cc9265e41a0415e309073a61
 --- !u!114 &-5720060537414394017
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49,6 +56,11 @@ MonoBehaviour:
     _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C802"
     _description: 
   _defaultProfileId: Japanese
+  _profileReferences:
+  - _profileId: English
+    _assetGuid: 97ee8a9429903624aa41b45eced35e4c
+  - _profileId: Japanese
+    _assetGuid: 793b9e0cf549444498b757d75be8ce97
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,3 +76,29 @@ MonoBehaviour:
   _paletteAssets:
   - {fileID: -7781068147370238263}
   - {fileID: -5720060537414394017}
+  - {fileID: 8268592430131601973}
+--- !u!114 &8268592430131601973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f924dedb83cc444e8fdcd0bd5f3724ee, type: 3}
+  m_Name: LegacyTextStylePaletteAsset
+  m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.LegacyTextStylePaletteAsset
+  _entries:
+  - _entryId: Content01
+    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C801"
+    _description: 
+  - _entryId: Content02
+    _displayName: "\u901A\u5E38\u30C6\u30AD\u30B9\u30C802"
+    _description: 
+  _defaultProfileId: Default
+  _profileReferences:
+  - _profileId: Default
+    _assetGuid: 50361ce8643be6d40b8480cf48897947
+  - _profileId: Test
+    _assetGuid: d153cc8f1519c1043a42bd5f644f1c83

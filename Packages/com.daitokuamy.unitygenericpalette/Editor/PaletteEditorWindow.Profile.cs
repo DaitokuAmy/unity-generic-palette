@@ -77,6 +77,7 @@ namespace UnityGenericPalette.Editor {
             var assetPath = AssetDatabase.GenerateUniqueAssetPath($"{profileFolderPath}/{profileAsset.name}.asset");
             AssetDatabase.CreateAsset(profileAsset, assetPath);
             EditorUtility.SetDirty(profileAsset);
+            PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(paletteAsset, false, false);
             if (setAsDefaultProfile) {
                 SetDefaultProfileId(paletteAsset, profileId);
             }
@@ -85,7 +86,6 @@ namespace UnityGenericPalette.Editor {
 
             _selectedProfileAsset = profileAsset;
             _selectedEntryIndex = -1;
-            SetCurrentEditorProfile(profileAsset);
             InvalidateProfileAssetList();
             RebuildWindow();
             return profileAsset;
@@ -113,6 +113,7 @@ namespace UnityGenericPalette.Editor {
         /// <param name="profileAsset">削除対象</param>
         /// <param name="resetSelection">選択状態をリセットするか</param>
         private void DeleteProfileAsset(PaletteProfileAssetBase profileAsset, bool resetSelection) {
+            var paletteAsset = profileAsset.PaletteAssetBase;
             ClearDefaultProfileIdIfMatched(profileAsset.PaletteAssetBase, profileAsset.ProfileId);
             PaletteEditorProfileContext.Instance.ClearCurrentProfileIfMatched(profileAsset);
 
@@ -123,6 +124,9 @@ namespace UnityGenericPalette.Editor {
             else {
                 DestroyImmediate(profileAsset, true);
             }
+
+            PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(paletteAsset, false, false);
+            AssetDatabase.SaveAssets();
 
             if (!resetSelection) {
                 return;
@@ -221,6 +225,7 @@ namespace UnityGenericPalette.Editor {
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
             RenameProfileAsset(profileAsset, profileId);
             UpdateDefaultProfileIdIfMatched(profileAsset.PaletteAssetBase, previousProfileId, profileId);
+            PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(profileAsset.PaletteAssetBase, false, false);
             EditorUtility.SetDirty(profileAsset);
             AssetDatabase.SaveAssets();
             Repaint();
@@ -238,7 +243,6 @@ namespace UnityGenericPalette.Editor {
             }
 
             _selectedProfileAsset = _profileAssetListItems[list.index];
-            SetCurrentEditorProfile(_selectedProfileAsset);
             Repaint();
         }
 

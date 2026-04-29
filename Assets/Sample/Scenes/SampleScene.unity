@@ -520,12 +520,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.PaletteEngine
   _paletteAssetStorage: {fileID: 11400000, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
   _dontDestroyOnLoad: 0
-  _includedProfileAssets:
-  - {fileID: 11400000, guid: b4fbb08bcb6029840b0a7fddcdc39219, type: 2}
-  - {fileID: 11400000, guid: b5b49bd3821f1df47821570ecc9f74f2, type: 2}
-  - {fileID: 11400000, guid: 4a925038cc9265e41a0415e309073a61, type: 2}
-  - {fileID: 11400000, guid: 793b9e0cf549444498b757d75be8ce97, type: 2}
-  - {fileID: 11400000, guid: 97ee8a9429903624aa41b45eced35e4c, type: 2}
+  _includedProfileAssets: []
 --- !u!4 &782001872
 Transform:
   m_ObjectHideFlags: 0
@@ -756,6 +751,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TMPTextStylePaletteApplier
   _entryId: Content01
   _targetText: {fileID: 980778581}
+  _ignoreStyleMask: 0
 --- !u!1 &1043171434
 GameObject:
   m_ObjectHideFlags: 0
@@ -922,6 +918,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TMPTextStylePaletteApplier
   _entryId: Content02
   _targetText: {fileID: 1043171437}
+  _ignoreStyleMask: 0
 --- !u!1 &1174232918
 GameObject:
   m_ObjectHideFlags: 0
@@ -1153,6 +1150,7 @@ GameObject:
   - component: {fileID: 1518300874}
   - component: {fileID: 1518300873}
   - component: {fileID: 1518300872}
+  - component: {fileID: 1518300875}
   m_Layer: 5
   m_Name: Text (Legacy)
   m_TagString: Untagged
@@ -1215,17 +1213,17 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: e3265ab4bf004d28a9537516768c1c75, type: 3}
-    m_FontSize: 50
+    m_FontSize: 64
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 5
-    m_MaxSize: 50
+    m_MaxSize: 64
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
-    m_LineSpacing: 1
+    m_LineSpacing: 0
   m_Text: Text (Legacy)
 --- !u!222 &1518300874
 CanvasRenderer:
@@ -1235,6 +1233,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1518300870}
   m_CullTransparentMesh: 1
+--- !u!114 &1518300875
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1518300870}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62cf40823ab847e08431fdb86ef5bc95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.LegacyTextStylePaletteApplier
+  _entryId: Content02
+  _targetText: {fileID: 1518300873}
+  _ignoreStyleMask: 0
 --- !u!1 &1791400277
 GameObject:
   m_ObjectHideFlags: 0

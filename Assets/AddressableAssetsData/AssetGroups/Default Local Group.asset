@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Default Local Group
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Default Local Group
+  m_GUID: 04fdfaec883820440b00ad373804cdca
+  m_SerializeEntries:
+  - m_GUID: 422c8164ea2e8f148b4f170a7d9b06d8
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteAssetStorage.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4a925038cc9265e41a0415e309073a61
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Red.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 50361ce8643be6d40b8480cf48897947
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/LegacyTextStylePaletteProfileAsset_Default.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 793b9e0cf549444498b757d75be8ce97
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/TextStylePaletteProfileAsset_Japanese.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 97ee8a9429903624aa41b45eced35e4c
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/TextStylePaletteProfileAsset_English.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b4fbb08bcb6029840b0a7fddcdc39219
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Default.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b5b49bd3821f1df47821570ecc9f74f2
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/ColorPaletteProfileAsset_Purple.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d153cc8f1519c1043a42bd5f644f1c83
+    m_Address: Assets/Sample/UnityGenericPalette/PaletteProfiles/LegacyTextStylePaletteProfileAsset_Test.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 07ae58d50426be54d85b7be135e01a8f, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: f7f4595253bbad9488d037aafd268039, type: 2}
+    - {fileID: 11400000, guid: 441cefebb4fdf25459bafc32e157206e, type: 2}

@@ -17,12 +17,13 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <typeparam name="TProfileAsset">ロードする ProfileAsset の型</typeparam>
         /// <param name="profileId">ロード対象の Profile ID</param>
+        /// <param name="profileGuid">ロード対象の ProfileAsset GUID</param>
         /// <param name="cancellationToken">キャンセル制御に使うトークン</param>
         /// <returns>ロードされた ProfileAsset を返す非同期処理</returns>
 #if USE_UNI_TASK
-        UniTask<TProfileAsset> LoadAsync<TProfileAsset>(string profileId, CancellationToken cancellationToken)
+        UniTask<TProfileAsset> LoadAsync<TProfileAsset>(string profileId, string profileGuid, CancellationToken cancellationToken)
 #else
-        Task<TProfileAsset> LoadAsync<TProfileAsset>(string profileId, CancellationToken cancellationToken)
+        Task<TProfileAsset> LoadAsync<TProfileAsset>(string profileId, string profileGuid, CancellationToken cancellationToken)
 #endif
             where TProfileAsset : PaletteProfileAssetBase;
 
