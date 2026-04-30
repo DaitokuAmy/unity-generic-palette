@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using UnityEngine;
@@ -308,7 +309,8 @@ namespace UnityGenericPalette {
                             "Synchronize the profile references before requesting the loader.");
                     }
 
-                    nextProfileAsset = await _paletteProfileLoader.LoadAsync<TProfileAsset>(profileId, profileGuid, cancellationToken);
+                    var assetName = BuildProfileAssetAssetName(typeof(TProfileAsset), profileId);
+                    nextProfileAsset = await _paletteProfileLoader.LoadAsync<TProfileAsset>(profileId, profileGuid, assetName, cancellationToken);
                     if (nextProfileAsset == null) {
                         throw new InvalidOperationException(
                             $"PaletteProfileLoader returned null for {typeof(TProfileAsset).Name} and ProfileId '{profileId}'.");
@@ -543,9 +545,44 @@ namespace UnityGenericPalette {
                     $"ProfileId '{loadedProfileId}' is not registered in {paletteAsset.GetType().Name} while unloading {loadedProfileAsset.GetType().Name}.");
             }
 
-            _paletteProfileLoader.Unload(loadedProfileId, loadedProfileGuid, loadedProfileAsset);
+            var assetName = BuildProfileAssetAssetName(loadedProfileAsset.GetType(), loadedProfileId);
+            _paletteProfileLoader.Unload(loadedProfileId, loadedProfileGuid, assetName, loadedProfileAsset);
             _loadedProfileAssets.Remove(paletteAsset);
             _loaderOwnedPaletteAssets.Remove(paletteAsset);
+        }
+
+        /// <summary>
+        /// ProfileAsset 名を組み立てる
+        /// </summary>
+        /// <param name="profileAssetType">ProfileAsset の型</param>
+        /// <param name="profileId">Profile ID</param>
+        /// <returns>ProfileAsset 名</returns>
+        private static string BuildProfileAssetAssetName(Type profileAssetType, string profileId) {
+            if (profileAssetType == null) {
+                throw new ArgumentNullException(nameof(profileAssetType));
+            }
+
+            var safeProfileId = SanitizeAssetFileName(profileId);
+            return $"{profileAssetType.Name}_{safeProfileId}";
+        }
+
+        /// <summary>
+        /// アセットファイル名として不正な文字を置換する
+        /// </summary>
+        /// <param name="fileName">変換対象の文字列</param>
+        /// <returns>安全なファイル名</returns>
+        private static string SanitizeAssetFileName(string fileName) {
+            if (string.IsNullOrEmpty(fileName)) {
+                return string.Empty;
+            }
+
+            var sanitizedFileName = fileName;
+            var invalidFileNameChars = Path.GetInvalidFileNameChars();
+            for (var i = 0; i < invalidFileNameChars.Length; i++) {
+                sanitizedFileName = sanitizedFileName.Replace(invalidFileNameChars[i], '_');
+            }
+
+            return sanitizedFileName;
         }
 
         /// <summary>

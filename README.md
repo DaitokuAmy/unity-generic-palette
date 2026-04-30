@@ -168,13 +168,15 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityGenericPalette;
 
-public sealed class PaletteBootstrap : MonoBehaviour {
-    private void Start() {
-        InitializeAsync().Forget();
-    }
+namespace App {
+    public sealed class PaletteBootstrap : MonoBehaviour {
+        private void Start() {
+            InitializeAsync().Forget();
+        }
 
-    private async UniTask InitializeAsync() {
-        await PaletteEngine.InitializeAsync(new GuidBaseAddressablesLoader());
+        private async UniTask InitializeAsync() {
+            await PaletteEngine.InitializeAsync(new GuidBaseAddressablesLoader());
+        }
     }
 }
 ```
@@ -269,13 +271,15 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityGenericPalette;
 
-public sealed class PaletteBootstrap : MonoBehaviour {
-    private void Start() {
-        InitializeAsync().Forget();
-    }
+namespace App {
+    public sealed class PaletteBootstrap : MonoBehaviour {
+        private void Start() {
+            InitializeAsync().Forget();
+        }
 
-    private async UniTask InitializeAsync() {
-        await PaletteEngine.InitializeAsync(new GuidBaseAddressablesLoader());
+        private async UniTask InitializeAsync() {
+            await PaletteEngine.InitializeAsync(new GuidBaseAddressablesLoader());
+        }
     }
 }
 ```
@@ -419,27 +423,17 @@ namespace App.Palette {
 ```csharp
 using System;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityGenericPalette;
-#if USE_UNI_TASK
-using Cysharp.Threading.Tasks;
-#else
-using System.Threading.Tasks;
-#endif
 
 namespace App.Palette {
     public sealed class ResourcesPaletteProfileLoader : IPaletteProfileLoader {
-#if USE_UNI_TASK
         public UniTask<TProfileAsset> LoadAsync<TProfileAsset>(
             string profileId,
             string profileGuid,
+            string assetName,
             CancellationToken cancellationToken)
-#else
-        public Task<TProfileAsset> LoadAsync<TProfileAsset>(
-            string profileId,
-            string profileGuid,
-            CancellationToken cancellationToken)
-#endif
             where TProfileAsset : PaletteProfileAssetBase {
             if (string.IsNullOrEmpty(profileId)) {
                 throw new ArgumentException("Profile ID must not be null or empty.", nameof(profileId));
@@ -447,21 +441,17 @@ namespace App.Palette {
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var resourcePath = $"PaletteProfiles/{profileId}";
+            var resourcePath = $"PaletteProfiles/{assetName}";
             var profileAsset = Resources.Load<TProfileAsset>(resourcePath);
             if (profileAsset == null) {
                 throw new InvalidOperationException(
                     $"Resources could not load {typeof(TProfileAsset).Name} from '{resourcePath}'.");
             }
 
-#if USE_UNI_TASK
             return UniTask.FromResult(profileAsset);
-#else
-            return Task.FromResult(profileAsset);
-#endif
         }
 
-        public void Unload(string profileId, string profileGuid, PaletteProfileAssetBase profileAsset) {
+        public void Unload(string profileId, string profileGuid, string assetName, PaletteProfileAssetBase profileAsset) {
             if (profileAsset == null) {
                 return;
             }
@@ -472,7 +462,7 @@ namespace App.Palette {
 }
 ```
 
-この例では `profileGuid` は使っていません。GUID ベースではなく、`profileId` から独自ルールでロード先を決めたいケース向けのサンプルです。
+この例では `profileGuid` は使っていません。`assetName` はライブラリ側で生成されるので、`Loader` 実装側は内部の命名規則を意識せず、そのままロード先の解決に使えます。
 
 使う側では、`Loader` を引数に渡して初期化します。動的ロード前提の構成で、引数なしの `InitializeAsync()` を先に呼ぶのは避けてください。既に別の場所で `SetLoader(...)` を設定済みなら、そのまま引数なしの `InitializeAsync()` を呼ぶこともできます。
 
@@ -483,7 +473,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityGenericPalette;
 
-namespace App.Palette {
+namespace App {
     public sealed class PaletteBootstrap : MonoBehaviour {
         private void Start() {
             InitializeAsync().Forget();

@@ -23,11 +23,13 @@ namespace UnityGenericPalette {
         public async UniTask<TProfileAsset> LoadAsync<TProfileAsset>(
             string profileId,
             string profileGuid,
+            string assetName,
             CancellationToken cancellationToken)
 #else
         public async Task<TProfileAsset> LoadAsync<TProfileAsset>(
             string profileId,
             string profileGuid,
+            string assetName,
             CancellationToken cancellationToken)
 #endif
             where TProfileAsset : PaletteProfileAssetBase {
@@ -76,7 +78,7 @@ namespace UnityGenericPalette {
         }
 
         /// <inheritdoc/>
-        public void Unload(string profileId, string profileGuid, PaletteProfileAssetBase profileAsset) {
+        public void Unload(string profileId, string profileGuid, string assetName, PaletteProfileAssetBase profileAsset) {
             if (string.IsNullOrEmpty(profileId)) {
                 throw new ArgumentException("Profile ID must not be null or empty.", nameof(profileId));
             }

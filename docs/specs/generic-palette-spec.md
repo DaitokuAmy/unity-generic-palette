@@ -186,7 +186,7 @@ docs/specs/
 1. `profileId` の妥当性を検証する
 2. `Included ProfileAsset` 一覧から一致する `ProfileId` を探す
 3. 見つからない場合は `PaletteAssetBase.ProfileReferences` から `profileGuid` を解決する
-4. `IPaletteProfileLoader.LoadAsync(profileId, profileGuid, cancellationToken)` を呼ぶ
+4. `IPaletteProfileLoader.LoadAsync(profileId, profileGuid, assetName, cancellationToken)` を呼ぶ
 5. 解決された `PaletteProfileAsset` を current として保持する
 6. 購読中 `Applier` へ変更通知を発火する
 
@@ -202,14 +202,15 @@ docs/specs/
 
 `IPaletteProfileLoader` は次の契約を持つ。
 
-- `LoadAsync<TProfileAsset>(string profileId, string profileGuid, CancellationToken cancellationToken)`
-- `Unload(string profileId, string profileGuid, PaletteProfileAssetBase profileAsset)`
+- `LoadAsync<TProfileAsset>(string profileId, string profileGuid, string assetName, CancellationToken cancellationToken)`
+- `Unload(string profileId, string profileGuid, string assetName, PaletteProfileAssetBase profileAsset)`
 
 意図:
 
 - `profileId` は論理的識別子として保持する
 - `profileGuid` はロード手段向けの物理キーとして使う
-- `Unload` 時も同じ `profileId` / `profileGuid` を受け取り、Loader 側で解放文脈を参照できる
+- `assetName` はライブラリ内部の命名規則を Loader 側へ持ち込まないための補助情報として使う
+- `Unload` 時も同じ `profileId` / `profileGuid` / `assetName` を受け取り、Loader 側で解放文脈を参照できる
 
 ### GuidBaseAddressablesLoader
 
