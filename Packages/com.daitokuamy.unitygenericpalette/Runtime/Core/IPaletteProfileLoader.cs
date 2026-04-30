@@ -30,7 +30,9 @@ namespace UnityGenericPalette {
         /// <summary>
         /// ロード済みの ProfileAsset を解放する
         /// </summary>
+        /// <param name="profileId">解放対象の Profile ID</param>
+        /// <param name="profileGuid">解放対象の ProfileAsset GUID</param>
         /// <param name="profileAsset">解放対象の ProfileAsset</param>
-        void Unload(PaletteProfileAssetBase profileAsset);
+        void Unload(string profileId, string profileGuid, PaletteProfileAssetBase profileAsset);
     }
 }

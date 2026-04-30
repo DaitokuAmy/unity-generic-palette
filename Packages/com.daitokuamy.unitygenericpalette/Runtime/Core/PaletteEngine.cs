@@ -65,23 +65,21 @@ namespace UnityGenericPalette {
         public static Task InitializeAsync(CancellationToken cancellationToken = default)
 #endif
         {
-            return GetRequiredRuntimeInstance().InitializeAsyncInternal(cancellationToken);
+            return GetRequiredRuntimeInstance().InitializeAsyncInternal(null, cancellationToken);
         }
 
-        void IPaletteProfileContext.SubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction) {
-            SubscribeChangedProfile(changedProfileAction);
-        }
-
-        void IPaletteProfileContext.UnsubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction) {
-            UnsubscribeChangedProfile(changedProfileAction);
-        }
-
-        bool IPaletteProfileContext.TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset) {
-            return TryGetCurrentProfileAsset(out profileAsset);
-        }
-
-        bool IPaletteProfileContext.TryGetCurrentProfileId<TProfileAsset>(out string profileId) {
-            return TryGetCurrentProfileIdInternal<TProfileAsset>(out profileId);
+        /// <summary>
+        /// ProfileLoader を設定したうえで PaletteAsset に設定された既定 Profile を初期化する
+        /// </summary>
+        /// <param name="paletteProfileLoader">初期化前に設定する ProfileLoader</param>
+        /// <param name="cancellationToken">キャンセル制御に使うトークン</param>
+#if USE_UNI_TASK
+        public static UniTask InitializeAsync(IPaletteProfileLoader paletteProfileLoader, CancellationToken cancellationToken = default)
+#else
+        public static Task InitializeAsync(IPaletteProfileLoader paletteProfileLoader, CancellationToken cancellationToken = default)
+#endif
+        {
+            return GetRequiredRuntimeInstance().InitializeAsyncInternal(paletteProfileLoader, cancellationToken);
         }
 
         /// <summary>
@@ -100,12 +98,32 @@ namespace UnityGenericPalette {
             return GetRequiredRuntimeInstance().ChangeProfileAsyncInternal<TProfileAsset>(profileId, cancellationToken);
         }
 
+        /// <inheritdoc/>
+        void IPaletteProfileContext.SubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction) {
+            SubscribeChangedProfile(changedProfileAction);
+        }
+
+        /// <inheritdoc/>
+        void IPaletteProfileContext.UnsubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction) {
+            UnsubscribeChangedProfile(changedProfileAction);
+        }
+
+        /// <inheritdoc/>
+        bool IPaletteProfileContext.TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset) {
+            return TryGetCurrentProfileAsset(out profileAsset);
+        }
+
+        /// <inheritdoc/>
+        bool IPaletteProfileContext.TryGetCurrentProfileId<TProfileAsset>(out string profileId) {
+            return TryGetCurrentProfileIdInternal<TProfileAsset>(out profileId);
+        }
+
         /// <summary>
         /// 指定した ProfileAsset 型の変更通知を購読する
         /// </summary>
         /// <typeparam name="TProfileAsset">購読対象の ProfileAsset 型</typeparam>
         /// <param name="changedProfileAction">通知先ハンドラー</param>
-        internal void SubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction)
+        private void SubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction)
             where TProfileAsset : PaletteProfileAssetBase {
             if (changedProfileAction == null) {
                 throw new ArgumentNullException(nameof(changedProfileAction));
@@ -129,7 +147,7 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <typeparam name="TProfileAsset">購読解除対象の ProfileAsset 型</typeparam>
         /// <param name="changedProfileAction">解除対象のハンドラー</param>
-        internal void UnsubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction)
+        private void UnsubscribeChangedProfile<TProfileAsset>(Action<TProfileAsset> changedProfileAction)
             where TProfileAsset : PaletteProfileAssetBase {
             if (changedProfileAction == null) {
                 return;
@@ -152,7 +170,7 @@ namespace UnityGenericPalette {
         /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
         /// <param name="profileAsset">取得できた ProfileAsset</param>
         /// <returns>取得できた場合は true</returns>
-        internal bool TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset)
+        private bool TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset)
             where TProfileAsset : PaletteProfileAssetBase {
             foreach (var loadedProfileAsset in _loadedProfileAssets.Values) {
                 if (loadedProfileAsset is TProfileAsset typedProfileAsset) {
@@ -202,13 +220,18 @@ namespace UnityGenericPalette {
         /// <summary>
         /// PaletteAsset に設定された既定 Profile を初期化する
         /// </summary>
+        /// <param name="paletteProfileLoader">初期化前に設定する ProfileLoader。null の場合は既存設定をそのまま使う</param>
         /// <param name="cancellationToken">キャンセル制御に使うトークン</param>
 #if USE_UNI_TASK
-        private async UniTask InitializeAsyncInternal(CancellationToken cancellationToken = default)
+        private async UniTask InitializeAsyncInternal(IPaletteProfileLoader paletteProfileLoader, CancellationToken cancellationToken = default)
 #else
-        private async Task InitializeAsyncInternal(CancellationToken cancellationToken = default)
+        private async Task InitializeAsyncInternal(IPaletteProfileLoader paletteProfileLoader, CancellationToken cancellationToken = default)
 #endif
         {
+            if (paletteProfileLoader != null) {
+                SetLoaderInternal(paletteProfileLoader);
+            }
+
             if (_paletteAssetStorage == null) {
                 return;
             }
@@ -508,7 +531,19 @@ namespace UnityGenericPalette {
                 throw new InvalidOperationException("PaletteProfileLoader is not assigned while unloading a previously loaded ProfileAsset.");
             }
 
-            _paletteProfileLoader.Unload(loadedProfileAsset);
+            if (!_currentProfileIds.TryGetValue(paletteAsset, out var loadedProfileId) ||
+                string.IsNullOrEmpty(loadedProfileId)) {
+                throw new InvalidOperationException(
+                    $"Current ProfileId is not tracked while unloading {loadedProfileAsset.GetType().Name}.");
+            }
+
+            if (!paletteAsset.TryGetProfileAssetGuid(loadedProfileId, out var loadedProfileGuid) ||
+                string.IsNullOrEmpty(loadedProfileGuid)) {
+                throw new InvalidOperationException(
+                    $"ProfileId '{loadedProfileId}' is not registered in {paletteAsset.GetType().Name} while unloading {loadedProfileAsset.GetType().Name}.");
+            }
+
+            _paletteProfileLoader.Unload(loadedProfileId, loadedProfileGuid, loadedProfileAsset);
             _loadedProfileAssets.Remove(paletteAsset);
             _loaderOwnedPaletteAssets.Remove(paletteAsset);
         }

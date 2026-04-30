@@ -76,7 +76,15 @@ namespace UnityGenericPalette {
         }
 
         /// <inheritdoc/>
-        public void Unload(PaletteProfileAssetBase profileAsset) {
+        public void Unload(string profileId, string profileGuid, PaletteProfileAssetBase profileAsset) {
+            if (string.IsNullOrEmpty(profileId)) {
+                throw new ArgumentException("Profile ID must not be null or empty.", nameof(profileId));
+            }
+
+            if (string.IsNullOrEmpty(profileGuid)) {
+                throw new ArgumentException("Profile GUID must not be null or empty.", nameof(profileGuid));
+            }
+
             if (profileAsset == null ||
                 !_loadedHandles.TryGetValue(profileAsset, out var loadHandle) ||
                 !loadHandle.IsValid()) {

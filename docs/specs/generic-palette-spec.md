@@ -203,12 +203,13 @@ docs/specs/
 `IPaletteProfileLoader` は次の契約を持つ。
 
 - `LoadAsync<TProfileAsset>(string profileId, string profileGuid, CancellationToken cancellationToken)`
-- `Unload(PaletteProfileAssetBase profileAsset)`
+- `Unload(string profileId, string profileGuid, PaletteProfileAssetBase profileAsset)`
 
 意図:
 
 - `profileId` は論理的識別子として保持する
 - `profileGuid` はロード手段向けの物理キーとして使う
+- `Unload` 時も同じ `profileId` / `profileGuid` を受け取り、Loader 側で解放文脈を参照できる
 
 ### GuidBaseAddressablesLoader
 
