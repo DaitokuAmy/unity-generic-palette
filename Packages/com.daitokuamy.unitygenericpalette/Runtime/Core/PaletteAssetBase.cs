@@ -7,6 +7,10 @@ namespace UnityGenericPalette {
     /// Palette の EntryId 集合と型情報を管理するアセットの基底
     /// </summary>
     public abstract class PaletteAssetBase : ScriptableObject {
+        [SerializeField, Tooltip("PaletteAsset の GUID")]
+        private string _paletteGuid;
+        [SerializeField, Tooltip("PaletteAsset の Local File ID")]
+        private long _paletteLocalFileId;
         [SerializeField, Tooltip("Palette に含まれる Entry 定義一覧")]
         private List<PaletteEntry> _entries = new();
         [SerializeField, Tooltip("初期化時に適用する既定 Profile の ID")]
@@ -17,6 +21,10 @@ namespace UnityGenericPalette {
         private Dictionary<string, int> _entryIndexCache;
         private Dictionary<string, string> _profileReferenceCache;
 
+        /// <summary>PaletteAsset の GUID</summary>
+        public string PaletteGuid => _paletteGuid;
+        /// <summary>PaletteAsset の Local File ID</summary>
+        public long PaletteLocalFileId => _paletteLocalFileId;
         /// <summary>Entry 一覧</summary>
         public IReadOnlyList<PaletteEntry> Entries => _entries;
         /// <summary>初期化時に適用する既定 Profile の ID</summary>
@@ -110,6 +118,18 @@ namespace UnityGenericPalette {
         /// </summary>
         public void InvalidateProfileReferenceCache() {
             _profileReferenceCache = null;
+        }
+
+        /// <summary>
+        /// 指定した Palette 識別子と一致するか判定する
+        /// </summary>
+        /// <param name="paletteGuid">比較対象の PaletteGuid</param>
+        /// <param name="paletteLocalFileId">比較対象の PaletteLocalFileId</param>
+        /// <returns>一致する場合は true</returns>
+        public bool HasPaletteIdentity(string paletteGuid, long paletteLocalFileId) {
+            return !string.IsNullOrEmpty(_paletteGuid) &&
+                string.Equals(_paletteGuid, paletteGuid, StringComparison.Ordinal) &&
+                _paletteLocalFileId == paletteLocalFileId;
         }
 
         /// <summary>

@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9beb97510a2e784b89b8146cc41ce9c, type: 3}
   m_Name: ColorPaletteAsset
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.ColorPaletteAsset
+  _paletteGuid: 422c8164ea2e8f148b4f170a7d9b06d8
+  _paletteLocalFileId: -9102117293650732433
   _entries:
   - _entryId: Base01
     _displayName: "\u30D9\u30FC\u30B9\u30AB\u30E9\u30FC"
@@ -28,7 +30,7 @@ MonoBehaviour:
   - _entryId: Negative01
     _displayName: "\u30CD\u30AC\u30C6\u30A3\u30D6\u30AB\u30E9\u30FC"
     _description: 
-  _defaultProfileId: Green
+  _defaultProfileId: Red
   _profileReferences:
   - _profileId: Green
     _assetGuid: b4fbb08bcb6029840b0a7fddcdc39219
@@ -48,6 +50,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1df4cfb1300f49bf8617353d3297b450, type: 3}
   m_Name: TextStylePaletteAsset
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TextStylePaletteAsset
+  _paletteGuid: 422c8164ea2e8f148b4f170a7d9b06d8
+  _paletteLocalFileId: -2765274703503311300
   _entries:
   - _entryId: Caption01
     _displayName: "\u30AD\u30E3\u30D7\u30B7\u30E7\u30F3"
@@ -55,12 +59,14 @@ MonoBehaviour:
   - _entryId: Content01
     _displayName: "\u5185\u5BB9"
     _description: 
-  _defaultProfileId: Medium
+  _defaultProfileId: Large
   _profileReferences:
   - _profileId: Large
     _assetGuid: e8adb2a15b666cf4fbf45f183c2952b0
   - _profileId: Medium
     _assetGuid: ccf6c3b263f66ad438cb80a79ba2db3e
+  - _profileId: Small
+    _assetGuid: ca091f3ca1219419c9b4f30510b6db0c
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

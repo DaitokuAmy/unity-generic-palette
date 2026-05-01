@@ -115,6 +115,13 @@ namespace UnityGenericPalette {
         }
 
         /// <inheritdoc/>
+        bool IPaletteProfileContext.TryGetCurrentPaletteProfile<TPaletteAsset, TProfileAsset>(
+            out TPaletteAsset paletteAsset,
+            out TProfileAsset profileAsset) {
+            return TryGetCurrentPaletteProfile(out paletteAsset, out profileAsset);
+        }
+
+        /// <inheritdoc/>
         bool IPaletteProfileContext.TryGetCurrentProfileId<TProfileAsset>(out string profileId) {
             return TryGetCurrentProfileIdInternal<TProfileAsset>(out profileId);
         }
@@ -173,13 +180,39 @@ namespace UnityGenericPalette {
         /// <returns>取得できた場合は true</returns>
         private bool TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset)
             where TProfileAsset : PaletteProfileAssetBase {
-            foreach (var loadedProfileAsset in _loadedProfileAssets.Values) {
-                if (loadedProfileAsset is TProfileAsset typedProfileAsset) {
-                    profileAsset = typedProfileAsset;
-                    return true;
-                }
+            if (TryGetCurrentPaletteProfile<PaletteAssetBase, TProfileAsset>(out _, out profileAsset)) {
+                return true;
             }
 
+            profileAsset = null;
+            return false;
+        }
+
+        /// <summary>
+        /// 指定した ProfileAsset 型に対応する現在の PaletteAsset と ProfileAsset を取得する
+        /// </summary>
+        /// <typeparam name="TPaletteAsset">取得対象の PaletteAsset 型</typeparam>
+        /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
+        /// <param name="paletteAsset">取得できた PaletteAsset</param>
+        /// <param name="profileAsset">取得できた ProfileAsset</param>
+        /// <returns>取得できた場合は true</returns>
+        private bool TryGetCurrentPaletteProfile<TPaletteAsset, TProfileAsset>(
+            out TPaletteAsset paletteAsset,
+            out TProfileAsset profileAsset)
+            where TPaletteAsset : PaletteAssetBase
+            where TProfileAsset : PaletteProfileAssetBase {
+            foreach (var loadedProfileAssetPair in _loadedProfileAssets) {
+                if (loadedProfileAssetPair.Key is not TPaletteAsset typedPaletteAsset ||
+                    loadedProfileAssetPair.Value is not TProfileAsset typedProfileAsset) {
+                    continue;
+                }
+
+                paletteAsset = typedPaletteAsset;
+                profileAsset = typedProfileAsset;
+                return true;
+            }
+
+            paletteAsset = null;
             profileAsset = null;
             return false;
         }
@@ -296,13 +329,12 @@ namespace UnityGenericPalette {
             BeginProfileChangeRequest<TProfileAsset>();
             try {
                 var isLoaderOwned = false;
-                PaletteAssetBase targetPaletteAsset = null;
+                var targetPaletteAsset = GetRequiredPaletteAssetForProfileAssetType<TProfileAsset>();
                 if (!TryGetIncludedProfileAsset<TProfileAsset>(profileId, out var nextProfileAsset)) {
                     if (_paletteProfileLoader == null) {
                         throw new InvalidOperationException("PaletteProfileLoader is not assigned.");
                     }
 
-                    targetPaletteAsset = GetRequiredPaletteAssetForProfileAssetType<TProfileAsset>();
                     if (!targetPaletteAsset.TryGetProfileAssetGuid(profileId, out var profileGuid)) {
                         throw new InvalidOperationException(
                             $"ProfileId '{profileId}' is not registered in {targetPaletteAsset.GetType().Name}. " +
@@ -319,18 +351,21 @@ namespace UnityGenericPalette {
                     isLoaderOwned = true;
                 }
 
-                var paletteAsset = nextProfileAsset.PaletteAssetBase;
-                if (paletteAsset == null) {
+                if (string.IsNullOrEmpty(nextProfileAsset.PaletteGuid) ||
+                    nextProfileAsset.PaletteLocalFileId == 0) {
                     throw new InvalidOperationException(
-                        $"{typeof(TProfileAsset).Name} has no PaletteAsset reference for ProfileId '{profileId}'.");
+                        $"{typeof(TProfileAsset).Name} has no Palette identity for ProfileId '{profileId}'.");
                 }
 
-                if (targetPaletteAsset != null && !ReferenceEquals(targetPaletteAsset, paletteAsset)) {
+                if (!targetPaletteAsset.HasPaletteIdentity(
+                    nextProfileAsset.PaletteGuid,
+                    nextProfileAsset.PaletteLocalFileId)) {
                     throw new InvalidOperationException(
                         $"PaletteProfileLoader returned {typeof(TProfileAsset).Name} for ProfileId '{profileId}', " +
-                        $"but the resolved PaletteAsset did not match {targetPaletteAsset.GetType().Name}.");
+                        $"but the resolved Palette identity did not match {targetPaletteAsset.GetType().Name}.");
                 }
 
+                var paletteAsset = targetPaletteAsset;
                 if (_currentProfileIds.TryGetValue(paletteAsset, out var currentProfileId) &&
                     _loadedProfileAssets.TryGetValue(paletteAsset, out var currentLoadedProfileAsset) &&
                     currentProfileId == profileId &&
@@ -393,22 +428,12 @@ namespace UnityGenericPalette {
             where TProfileAsset : PaletteProfileAssetBase {
             PaletteAssetBase matchedPaletteAsset = null;
 
-            for (var i = 0; i < _includedProfileAssets.Count; i++) {
-                if (_includedProfileAssets[i] is not TProfileAsset includedProfileAsset ||
-                    includedProfileAsset.PaletteAssetBase == null) {
+            foreach (var loadedProfileAssetPair in _loadedProfileAssets) {
+                if (loadedProfileAssetPair.Value is not TProfileAsset) {
                     continue;
                 }
 
-                matchedPaletteAsset = EnsureSinglePaletteAssetMatch<TProfileAsset>(matchedPaletteAsset, includedProfileAsset.PaletteAssetBase);
-            }
-
-            foreach (var loadedProfileAsset in _loadedProfileAssets.Values) {
-                if (loadedProfileAsset is not TProfileAsset typedLoadedProfileAsset ||
-                    typedLoadedProfileAsset.PaletteAssetBase == null) {
-                    continue;
-                }
-
-                matchedPaletteAsset = EnsureSinglePaletteAssetMatch<TProfileAsset>(matchedPaletteAsset, typedLoadedProfileAsset.PaletteAssetBase);
+                matchedPaletteAsset = EnsureSinglePaletteAssetMatch<TProfileAsset>(matchedPaletteAsset, loadedProfileAssetPair.Key);
             }
 
             if (_paletteAssetStorage != null) {
@@ -425,7 +450,7 @@ namespace UnityGenericPalette {
             if (matchedPaletteAsset == null) {
                 throw new InvalidOperationException(
                     $"PaletteAsset for {typeof(TProfileAsset).Name} could not be resolved. " +
-                    "Assign PaletteAssetStorage or include a ProfileAsset for this type.");
+                    "Assign PaletteAssetStorage or load a ProfileAsset for this type before changing it.");
             }
 
             return matchedPaletteAsset;

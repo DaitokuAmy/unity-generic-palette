@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.TextStylePaletteProfileAsset
   _profileId: Medium
   _sortOrder: 0
-  _paletteAsset: {fileID: -2765274703503311300, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
+  _paletteGuid: 422c8164ea2e8f148b4f170a7d9b06d8
+  _paletteLocalFileId: -2765274703503311300
   _values:
   - _fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     _materialPreset: {fileID: 2100000, guid: 79459efec17a4d00a321bdcc27bbc385, type: 2}

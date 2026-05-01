@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityGenericPalette::UnityGenericPalette.ColorPaletteProfileAsset
   _profileId: Green
   _sortOrder: 0
-  _paletteAsset: {fileID: -9102117293650732433, guid: 422c8164ea2e8f148b4f170a7d9b06d8, type: 2}
+  _paletteGuid: 422c8164ea2e8f148b4f170a7d9b06d8
+  _paletteLocalFileId: -9102117293650732433
   _values:
   - {r: 0.4, g: 0.8, b: 0.6666667, a: 1}
   - {r: 0.15, g: 0.3, b: 0.25000003, a: 1}

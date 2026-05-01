@@ -411,6 +411,8 @@ namespace UnityGenericPalette.Editor {
             EditorUtility.SetDirty(paletteAsset);
             EditorUtility.SetDirty(_paletteAssetStorage);
             AssetDatabase.SaveAssets();
+            PaletteAssetIdentityEditorUtility.EnsurePaletteAssetGuid(paletteAsset);
+            AssetDatabase.SaveAssets();
 
             _selectedPaletteAsset = paletteAsset;
             _selectedEntryIndex = -1;

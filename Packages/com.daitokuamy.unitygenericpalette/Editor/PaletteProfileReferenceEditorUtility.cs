@@ -214,7 +214,12 @@ namespace UnityGenericPalette.Editor {
             for (var i = 0; i < profileAssetGuids.Length; i++) {
                 var profileAssetPath = AssetDatabase.GUIDToAssetPath(profileAssetGuids[i]);
                 var profileAsset = AssetDatabase.LoadAssetAtPath(profileAssetPath, profileAssetType) as PaletteProfileAssetBase;
-                if (profileAsset == null || profileAsset.PaletteAssetBase != paletteAsset) {
+                if (profileAsset == null) {
+                    continue;
+                }
+
+                PaletteAssetIdentityEditorUtility.SynchronizeProfileAssetPaletteGuid(profileAsset);
+                if (!PaletteAssetIdentityEditorUtility.IsAssignedToPalette(profileAsset, paletteAsset)) {
                     continue;
                 }
 

@@ -11,7 +11,7 @@ namespace UnityGenericPalette {
         [SerializeField, PaletteEntryId, Tooltip("参照する Entry の ID")]
         private string _entryId;
 
-        private IPaletteProfileContext _subscribedPaletteProfileContext;
+        private IPaletteProfileContext _paletteProfileContext;
 
         /// <summary>参照する Entry の ID</summary>
         public string EntryId => _entryId;
@@ -24,21 +24,21 @@ namespace UnityGenericPalette {
                 return;
             }
 
-            _subscribedPaletteProfileContext = paletteProfileContext;
-            _subscribedPaletteProfileContext.SubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
-            ApplyCurrentProfileIfAvailable(_subscribedPaletteProfileContext);
+            _paletteProfileContext = paletteProfileContext;
+            _paletteProfileContext.SubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
+            ApplyCurrentProfileIfAvailable(_paletteProfileContext);
         }
 
         /// <summary>
          /// 無効化時の処理
          /// </summary>
         protected virtual void OnDisable() {
-            if (_subscribedPaletteProfileContext == null) {
+            if (_paletteProfileContext == null) {
                 return;
             }
 
-            _subscribedPaletteProfileContext.UnsubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
-            _subscribedPaletteProfileContext = null;
+            _paletteProfileContext.UnsubscribeChangedProfile<TPaletteProfileAsset>(OnChangedProfile);
+            _paletteProfileContext = null;
         }
 
         /// <summary>
@@ -71,8 +71,10 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="paletteProfileContext">参照する ProfileContext</param>
         private void ApplyCurrentProfileIfAvailable(IPaletteProfileContext paletteProfileContext) {
-            if (paletteProfileContext.TryGetCurrentProfileAsset<TPaletteProfileAsset>(out var paletteProfileAsset)) {
-                OnChangedProfile(paletteProfileAsset);
+            if (paletteProfileContext.TryGetCurrentPaletteProfile<TPaletteAsset, TPaletteProfileAsset>(
+                out var paletteAsset,
+                out var paletteProfileAsset)) {
+                ApplyProfileValue(paletteAsset, paletteProfileAsset);
             }
         }
 
@@ -81,15 +83,31 @@ namespace UnityGenericPalette {
         /// </summary>
         /// <param name="paletteProfileAsset">変更後の ProfileAsset</param>
         private void OnChangedProfile(TPaletteProfileAsset paletteProfileAsset) {
-            if (paletteProfileAsset == null || string.IsNullOrEmpty(_entryId)) {
+            if (_paletteProfileContext == null ||
+                !_paletteProfileContext.TryGetCurrentPaletteProfile<TPaletteAsset, TPaletteProfileAsset>(
+                    out var paletteAsset,
+                    out var currentProfileAsset) ||
+                !ReferenceEquals(currentProfileAsset, paletteProfileAsset)) {
                 return;
             }
 
-            if (!paletteProfileAsset.TryGetValueById(_entryId, out var value)) {
+            ApplyProfileValue(paletteAsset, paletteProfileAsset);
+        }
+
+        /// <summary>
+        /// 指定した PaletteAsset と ProfileAsset を使って値を反映する
+        /// </summary>
+        /// <param name="paletteAsset">参照する PaletteAsset</param>
+        /// <param name="paletteProfileAsset">参照する ProfileAsset</param>
+        private void ApplyProfileValue(TPaletteAsset paletteAsset, TPaletteProfileAsset paletteProfileAsset) {
+            if (paletteAsset == null ||
+                paletteProfileAsset == null ||
+                string.IsNullOrEmpty(_entryId) ||
+                !paletteAsset.TryGetEntryIndex(_entryId, out var entryIndex)) {
                 return;
             }
 
-            ApplyValue(value);
+            ApplyValue(paletteProfileAsset.GetValueByIndex(entryIndex));
         }
     }
 }

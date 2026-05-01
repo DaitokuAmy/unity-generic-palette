@@ -39,6 +39,13 @@ namespace UnityGenericPalette.Editor {
         }
 
         /// <inheritdoc/>
+        bool IPaletteProfileContext.TryGetCurrentPaletteProfile<TPaletteAsset, TProfileAsset>(
+            out TPaletteAsset paletteAsset,
+            out TProfileAsset profileAsset) {
+            return TryGetCurrentPaletteProfile(out paletteAsset, out profileAsset);
+        }
+
+        /// <inheritdoc/>
         bool IPaletteProfileContext.TryGetCurrentProfileId<TProfileAsset>(out string profileId) {
             return TryGetCurrentProfileId<TProfileAsset>(out profileId);
         }
@@ -61,9 +68,9 @@ namespace UnityGenericPalette.Editor {
                 throw new ArgumentNullException(nameof(profileAsset));
             }
 
-            var paletteAsset = profileAsset.PaletteAssetBase;
-            if (paletteAsset == null) {
-                throw new InvalidOperationException($"{profileAsset.GetType().Name} has no PaletteAsset reference.");
+            PaletteAssetIdentityEditorUtility.SynchronizeProfileAssetPaletteGuid(profileAsset);
+            if (!PaletteAssetIdentityEditorUtility.TryGetPaletteAsset(profileAsset, out var paletteAsset)) {
+                throw new InvalidOperationException($"{profileAsset.GetType().Name} has no resolvable PaletteAsset.");
             }
 
             _currentProfileAssets[paletteAsset] = profileAsset;
@@ -81,8 +88,8 @@ namespace UnityGenericPalette.Editor {
                 return;
             }
 
-            var paletteAsset = profileAsset.PaletteAssetBase;
-            if (paletteAsset == null) {
+            PaletteAssetIdentityEditorUtility.SynchronizeProfileAssetPaletteGuid(profileAsset);
+            if (!PaletteAssetIdentityEditorUtility.TryGetPaletteAsset(profileAsset, out var paletteAsset)) {
                 return;
             }
 
@@ -119,8 +126,8 @@ namespace UnityGenericPalette.Editor {
                 return;
             }
 
-            var paletteAsset = profileAsset.PaletteAssetBase;
-            if (paletteAsset == null ||
+            PaletteAssetIdentityEditorUtility.SynchronizeProfileAssetPaletteGuid(profileAsset);
+            if (!PaletteAssetIdentityEditorUtility.TryGetPaletteAsset(profileAsset, out var paletteAsset) ||
                 !_currentProfileAssets.TryGetValue(paletteAsset, out var currentProfileAsset) ||
                 !ReferenceEquals(currentProfileAsset, profileAsset)) {
                 return;
@@ -183,17 +190,43 @@ namespace UnityGenericPalette.Editor {
         /// <returns>取得できた場合は true</returns>
         private bool TryGetCurrentProfileAsset<TProfileAsset>(out TProfileAsset profileAsset)
             where TProfileAsset : PaletteProfileAssetBase {
-            foreach (var currentProfileAsset in _currentProfileAssets.Values) {
-                if (currentProfileAsset is TProfileAsset typedProfileAsset) {
-                    profileAsset = typedProfileAsset;
-                    return true;
-                }
-            }
-
-            if (TryGetDefaultProfileAsset(out profileAsset)) {
+            if (TryGetCurrentPaletteProfile<PaletteAssetBase, TProfileAsset>(out _, out profileAsset)) {
                 return true;
             }
 
+            profileAsset = null;
+            return false;
+        }
+
+        /// <summary>
+        /// 指定した ProfileAsset 型に対応する現在の PaletteAsset と ProfileAsset を取得する
+        /// </summary>
+        /// <typeparam name="TPaletteAsset">取得対象の PaletteAsset 型</typeparam>
+        /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
+        /// <param name="paletteAsset">取得できた PaletteAsset</param>
+        /// <param name="profileAsset">取得できた ProfileAsset</param>
+        /// <returns>取得できた場合は true</returns>
+        private bool TryGetCurrentPaletteProfile<TPaletteAsset, TProfileAsset>(
+            out TPaletteAsset paletteAsset,
+            out TProfileAsset profileAsset)
+            where TPaletteAsset : PaletteAssetBase
+            where TProfileAsset : PaletteProfileAssetBase {
+            foreach (var currentProfileAssetPair in _currentProfileAssets) {
+                if (currentProfileAssetPair.Key is not TPaletteAsset typedPaletteAsset ||
+                    currentProfileAssetPair.Value is not TProfileAsset typedProfileAsset) {
+                    continue;
+                }
+
+                paletteAsset = typedPaletteAsset;
+                profileAsset = typedProfileAsset;
+                return true;
+            }
+
+            if (TryGetDefaultPaletteProfile(out paletteAsset, out profileAsset)) {
+                return true;
+            }
+
+            paletteAsset = null;
             profileAsset = null;
             return false;
         }
@@ -269,25 +302,32 @@ namespace UnityGenericPalette.Editor {
         /// <typeparam name="TProfileAsset">取得対象の ProfileAsset 型</typeparam>
         /// <param name="profileAsset">取得できた ProfileAsset</param>
         /// <returns>取得できた場合は true</returns>
-        private bool TryGetDefaultProfileAsset<TProfileAsset>(out TProfileAsset profileAsset)
+        private bool TryGetDefaultPaletteProfile<TPaletteAsset, TProfileAsset>(
+            out TPaletteAsset paletteAsset,
+            out TProfileAsset profileAsset)
+            where TPaletteAsset : PaletteAssetBase
             where TProfileAsset : PaletteProfileAssetBase {
             var paletteAssetStorage = UnityGenericPaletteProjectSettings.instance.PaletteAssetStorage;
             if (paletteAssetStorage == null) {
+                paletteAsset = null;
                 profileAsset = null;
                 return false;
             }
 
             for (var i = 0; i < paletteAssetStorage.PaletteAssets.Count; i++) {
-                var paletteAsset = paletteAssetStorage.PaletteAssets[i];
-                if (paletteAsset == null || string.IsNullOrEmpty(paletteAsset.DefaultProfileId)) {
+                var currentPaletteAsset = paletteAssetStorage.PaletteAssets[i];
+                if (currentPaletteAsset is not TPaletteAsset typedPaletteAsset ||
+                    string.IsNullOrEmpty(currentPaletteAsset.DefaultProfileId)) {
                     continue;
                 }
 
-                if (TryResolveProfileAsset(paletteAsset, paletteAsset.DefaultProfileId, out profileAsset)) {
+                if (TryResolveProfileAsset(currentPaletteAsset, currentPaletteAsset.DefaultProfileId, out profileAsset)) {
+                    paletteAsset = typedPaletteAsset;
                     return true;
                 }
             }
 
+            paletteAsset = null;
             profileAsset = null;
             return false;
         }
@@ -311,7 +351,7 @@ namespace UnityGenericPalette.Editor {
                 var profileAssetPath = AssetDatabase.GUIDToAssetPath(profileGuid);
                 var referencedProfileAsset = AssetDatabase.LoadAssetAtPath<TProfileAsset>(profileAssetPath);
                 if (referencedProfileAsset != null &&
-                    referencedProfileAsset.PaletteAssetBase == paletteAsset &&
+                    PaletteAssetIdentityEditorUtility.IsAssignedToPalette(referencedProfileAsset, paletteAsset) &&
                     referencedProfileAsset.ProfileId == profileId) {
                     profileAsset = referencedProfileAsset;
                     return true;
@@ -323,7 +363,7 @@ namespace UnityGenericPalette.Editor {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
                 var candidateProfileAsset = AssetDatabase.LoadAssetAtPath<TProfileAsset>(assetPath);
                 if (candidateProfileAsset == null ||
-                    candidateProfileAsset.PaletteAssetBase != paletteAsset ||
+                    !PaletteAssetIdentityEditorUtility.IsAssignedToPalette(candidateProfileAsset, paletteAsset) ||
                     candidateProfileAsset.ProfileId != profileId) {
                     continue;
                 }

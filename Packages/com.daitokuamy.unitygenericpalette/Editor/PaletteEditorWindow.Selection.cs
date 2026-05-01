@@ -78,6 +78,8 @@ namespace UnityGenericPalette.Editor {
                 return profileAssets;
             }
 
+            PaletteAssetIdentityEditorUtility.EnsurePaletteAssetGuid(paletteAsset);
+
             var profileAssetType = GetProfileAssetType(paletteAsset);
             if (profileAssetType == null) {
                 return profileAssets;
@@ -91,7 +93,8 @@ namespace UnityGenericPalette.Editor {
                     continue;
                 }
 
-                if (profileAsset.PaletteAssetBase != paletteAsset) {
+                PaletteAssetIdentityEditorUtility.SynchronizeProfileAssetPaletteGuid(profileAsset);
+                if (!PaletteAssetIdentityEditorUtility.IsAssignedToPalette(profileAsset, paletteAsset)) {
                     continue;
                 }
 

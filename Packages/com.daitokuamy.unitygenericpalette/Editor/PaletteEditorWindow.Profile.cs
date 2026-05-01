@@ -60,6 +60,8 @@ namespace UnityGenericPalette.Editor {
                 return null;
             }
 
+            PaletteAssetIdentityEditorUtility.EnsurePaletteAssetGuid(paletteAsset);
+
             var profileAsset = CreateInstance(profileAssetType) as PaletteProfileAssetBase;
             if (profileAsset == null) {
                 return null;
@@ -70,7 +72,8 @@ namespace UnityGenericPalette.Editor {
             var serializedObject = new SerializedObject(profileAsset);
             serializedObject.FindProperty("_profileId").stringValue = profileId;
             serializedObject.FindProperty("_sortOrder").intValue = GetNextProfileSortOrder(paletteAsset);
-            serializedObject.FindProperty("_paletteAsset").objectReferenceValue = paletteAsset;
+            serializedObject.FindProperty("_paletteGuid").stringValue = paletteAsset.PaletteGuid;
+            serializedObject.FindProperty("_paletteLocalFileId").longValue = paletteAsset.PaletteLocalFileId;
             SynchronizeProfileValuesArray(serializedObject.FindProperty("_values"), paletteAsset.Entries);
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
@@ -113,8 +116,8 @@ namespace UnityGenericPalette.Editor {
         /// <param name="profileAsset">削除対象</param>
         /// <param name="resetSelection">選択状態をリセットするか</param>
         private void DeleteProfileAsset(PaletteProfileAssetBase profileAsset, bool resetSelection) {
-            var paletteAsset = profileAsset.PaletteAssetBase;
-            ClearDefaultProfileIdIfMatched(profileAsset.PaletteAssetBase, profileAsset.ProfileId);
+            PaletteAssetIdentityEditorUtility.TryGetPaletteAsset(profileAsset, out var paletteAsset);
+            ClearDefaultProfileIdIfMatched(paletteAsset, profileAsset.ProfileId);
             PaletteEditorProfileContext.Instance.ClearCurrentProfileIfMatched(profileAsset);
 
             var assetPath = AssetDatabase.GetAssetPath(profileAsset);
@@ -125,7 +128,9 @@ namespace UnityGenericPalette.Editor {
                 DestroyImmediate(profileAsset, true);
             }
 
-            PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(paletteAsset, false, false);
+            if (paletteAsset != null) {
+                PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(paletteAsset, false, false);
+            }
             AssetDatabase.SaveAssets();
 
             if (!resetSelection) {
@@ -224,8 +229,10 @@ namespace UnityGenericPalette.Editor {
             profileIdProperty.stringValue = profileId;
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
             RenameProfileAsset(profileAsset, profileId);
-            UpdateDefaultProfileIdIfMatched(profileAsset.PaletteAssetBase, previousProfileId, profileId);
-            PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(profileAsset.PaletteAssetBase, false, false);
+            if (PaletteAssetIdentityEditorUtility.TryGetPaletteAsset(profileAsset, out var paletteAsset)) {
+                UpdateDefaultProfileIdIfMatched(paletteAsset, previousProfileId, profileId);
+                PaletteProfileReferenceEditorUtility.SynchronizePaletteAssetProfileReferences(paletteAsset, false, false);
+            }
             EditorUtility.SetDirty(profileAsset);
             AssetDatabase.SaveAssets();
             Repaint();
@@ -472,12 +479,13 @@ namespace UnityGenericPalette.Editor {
         /// <param name="profileAsset">対象の ProfileAsset</param>
         /// <param name="isDefaultProfile">既定 Profile かどうか</param>
         private void ToggleDefaultProfile(PaletteProfileAssetBase profileAsset, bool isDefaultProfile) {
-            if (profileAsset == null || profileAsset.PaletteAssetBase == null) {
+            if (profileAsset == null ||
+                !PaletteAssetIdentityEditorUtility.TryGetPaletteAsset(profileAsset, out var paletteAsset)) {
                 return;
             }
 
             if (!isDefaultProfile) {
-                SetDefaultProfileId(profileAsset.PaletteAssetBase, profileAsset.ProfileId);
+                SetDefaultProfileId(paletteAsset, profileAsset.ProfileId);
                 SetCurrentEditorProfile(profileAsset);
             }
 
